@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://blog.x2know.org/"/>
-  <updated>2016-06-27T16:19:38.000Z</updated>
+  <updated>2016-07-05T16:09:48.000Z</updated>
   <id>http://blog.x2know.org/</id>
   
   <author>
@@ -16,11 +16,161 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>企业级监控系统设计实践（1）</title>
+    <title>企业级监控系统设计实践（二）</title>
+    <link href="http://blog.x2know.org/2016/07/03/monitor-system2/"/>
+    <id>http://blog.x2know.org/2016/07/03/monitor-system2/</id>
+    <published>2016-07-03T15:54:43.000Z</published>
+    <updated>2016-07-05T16:09:48.000Z</updated>
+    
+    <content type="html">&lt;h1 id=&quot;数据采集&quot;&gt;&lt;a href=&quot;#数据采集&quot; class=&quot;headerlink&quot; title=&quot;数据采集&quot;&gt;&lt;/a&gt;数据采集&lt;/h1&gt;&lt;p&gt;数据采集大致分为两种：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;机器指标&lt;/li&gt;
+&lt;li&gt;业务数据&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;采集方式也有两种：push和pull&lt;br&gt;当agent数量非常庞大时，如果采用pull的方式，server端需要保持大量的链接，非常消耗性能，所以我们采用agent push数据的方式&lt;/p&gt;
+&lt;h2 id=&quot;首先总结下机器指标的采集&quot;&gt;&lt;a href=&quot;#首先总结下机器指标的采集&quot; class=&quot;headerlink&quot; title=&quot;首先总结下机器指标的采集&quot;&gt;&lt;/a&gt;首先总结下机器指标的采集&lt;/h2&gt;&lt;h4 id=&quot;cpu&quot;&gt;&lt;a href=&quot;#cpu&quot; class=&quot;headerlink&quot; title=&quot;cpu&quot;&gt;&lt;/a&gt;cpu&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;cpu.busy&lt;/li&gt;
+&lt;li&gt;cpu.cnt&lt;/li&gt;
+&lt;li&gt;cpu.guest&lt;/li&gt;
+&lt;li&gt;cpu.idle&lt;/li&gt;
+&lt;li&gt;cpu.iowait&lt;/li&gt;
+&lt;li&gt;cpu.irq&lt;/li&gt;
+&lt;li&gt;cpu.nice&lt;/li&gt;
+&lt;li&gt;cpu.softirq&lt;/li&gt;
+&lt;li&gt;cpu.steal&lt;/li&gt;
+&lt;li&gt;cpu.system&lt;/li&gt;
+&lt;li&gt;cpu.user&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;如何计算cpu利用率呢？&lt;br&gt;计算原理如下：&lt;a href=&quot;http://blog.csdn.net/rheostat/article/details/8167479&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;传送门&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;首先得到每个cpu的状态，封装成一个函数CurrentProcStat()&lt;br&gt;代码如下&lt;br&gt;&lt;a href=&quot;http://pastebin.ubuntu.com/18247784/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://pastebin.ubuntu.com/18247784/&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;然后将得到的数据存到一个数组 procStatHistory 中，定期跟新数组中的cpu的状态值&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;func UpdateCpuStat() error {
+    ps, err := CurrentProcStat() 
+    if err != nil {
+        return err
+    }
+    psLock.Lock()
+    defer psLock.Unlock()
+    for i := historyCount - 1; i &amp;gt; 0; i-- {
+        procStatHistory[i] = procStatHistory[i-1]
+    }
+    procStatHistory[0] = ps
+    return nil
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;计算结果&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;cpuIdle := float64(procStatHistory[0].Cpu.Idle-procStatHistory[1].Cpu.Idle)*100.00/float64(procStatHistory[0].Cpu.Total - procStatHistory[1].Cpu.Total)
+&lt;/code&gt;&lt;/pre&gt;&lt;h4 id=&quot;内存&quot;&gt;&lt;a href=&quot;#内存&quot; class=&quot;headerlink&quot; title=&quot;内存&quot;&gt;&lt;/a&gt;内存&lt;/h4&gt;&lt;p&gt;一般内存监控一下几个指标即可&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;memfree&lt;/li&gt;
+&lt;li&gt;memtotal&lt;/li&gt;
+&lt;li&gt;memused&lt;/li&gt;
+&lt;li&gt;swapfree&lt;/li&gt;
+&lt;li&gt;swaptotal&lt;/li&gt;
+&lt;li&gt;swapused&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;这些指标的数据可以从/proc/meminfo中获取,linux下输入 cat /proc/meminfo 得到以下信息&lt;br&gt;&lt;img src=&quot;http://x2know.qiniudn.com/meminfo.jpg&quot; alt=&quot;此处输入图片的描述&quot;&gt;&lt;br&gt;几个主要指标的说明&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;MemTotal — 总的内存大小，单位kb&lt;br&gt;MemFree    — 空闲的内存大小，单位kb&lt;br&gt;SwapTotal — 总swap大小，单位kb&lt;br&gt;SwapFree — 空闲wsap大小，单位kb&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;获取内存的具体代码实现 &lt;a href=&quot;http://pastebin.ubuntu.com/16199860/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://pastebin.ubuntu.com/16199860/&lt;/a&gt;&lt;/p&gt;
+&lt;h4 id=&quot;磁盘相关采集项&quot;&gt;&lt;a href=&quot;#磁盘相关采集项&quot; class=&quot;headerlink&quot; title=&quot;磁盘相关采集项&quot;&gt;&lt;/a&gt;磁盘相关采集项&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;df.bytes.free&lt;/li&gt;
+&lt;li&gt;df.bytes.total&lt;/li&gt;
+&lt;li&gt;df.bytes.used&lt;/li&gt;
+&lt;li&gt;df.inodes.free&lt;/li&gt;
+&lt;li&gt;df.inodes.total&lt;/li&gt;
+&lt;li&gt;df.inodes.used&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;linux下查看命令：df -lh(/ih)&lt;br&gt;采集方法：&lt;br&gt;读取/proc/mounts拿到所有挂载点&lt;br&gt;具体代码：&lt;a href=&quot;http://pastebin.ubuntu.com/16201041&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://pastebin.ubuntu.com/16201041&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;通过golang &lt;a href=&quot;https://golang.org/pkg/syscall/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;syscall&lt;/a&gt;包中的 Statfs函数得到磁盘blocks和inode的使用情况。&lt;br&gt;具体代码如下：&lt;a href=&quot;http://pastebin.ubuntu.com/18287842&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://pastebin.ubuntu.com/18287842&lt;/a&gt;&lt;/p&gt;
+&lt;h4 id=&quot;磁盘io采集项&quot;&gt;&lt;a href=&quot;#磁盘io采集项&quot; class=&quot;headerlink&quot; title=&quot;磁盘io采集项&quot;&gt;&lt;/a&gt;磁盘io采集项&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;disk.io.avgqu-sz  平均每次设备I/O操作的数据大小&lt;/li&gt;
+&lt;li&gt;disk.io.avgrq-sz  平均I/O队列长度&lt;/li&gt;
+&lt;li&gt;disk.io.await  平均每次设备I/O操作的等待时间&lt;/li&gt;
+&lt;li&gt;disk.io.ios_in_progress  &lt;/li&gt;
+&lt;li&gt;disk.io.msec_read  读消耗时间&lt;/li&gt;
+&lt;li&gt;disk.io.msec_write 写消耗时间&lt;/li&gt;
+&lt;li&gt;disk.io.msec_total io总消耗时间&lt;/li&gt;
+&lt;li&gt;disk.io.msec_weighted_total  加权io总消耗时间&lt;/li&gt;
+&lt;li&gt;disk.io.read_bytes&lt;/li&gt;
+&lt;li&gt;disk.io.read_merged&lt;/li&gt;
+&lt;li&gt;disk.io.read_requests &lt;/li&gt;
+&lt;li&gt;disk.io.read_sectors&lt;/li&gt;
+&lt;li&gt;disk.io.write_bytes &lt;/li&gt;
+&lt;li&gt;disk.io.write_merged&lt;/li&gt;
+&lt;li&gt;disk.io.write_requests&lt;/li&gt;
+&lt;li&gt;disk.io.write_sectors&lt;/li&gt;
+&lt;li&gt;disk.io.svctm  平均每次io消耗时间&lt;/li&gt;
+&lt;li&gt;disk.io.util 单位时间内（1s）读写占用时间比例&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;linux下查看命令：&lt;a href=&quot;http://linux.die.net/man/1/iostat&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;iostat&lt;/a&gt;&lt;/p&gt;
+&lt;h4 id=&quot;机器负载采集项&quot;&gt;&lt;a href=&quot;#机器负载采集项&quot; class=&quot;headerlink&quot; title=&quot;机器负载采集项&quot;&gt;&lt;/a&gt;机器负载采集项&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;load.1min&lt;/li&gt;
+&lt;li&gt;load.5min&lt;/li&gt;
+&lt;li&gt;load.15min&lt;br&gt;采集方法：直接读取/proc/loadavg&lt;br&gt;linux下查看命令：top&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&quot;网络相关采集项&quot;&gt;&lt;a href=&quot;#网络相关采集项&quot; class=&quot;headerlink&quot; title=&quot;网络相关采集项&quot;&gt;&lt;/a&gt;网络相关采集项&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;net.if.in.compressed&lt;/li&gt;
+&lt;li&gt;net.if.in.dropped&lt;/li&gt;
+&lt;li&gt;net.if.in.errors&lt;/li&gt;
+&lt;li&gt;net.if.in.fifo.errs&lt;/li&gt;
+&lt;li&gt;net.if.in.frame.errs&lt;/li&gt;
+&lt;li&gt;net.if.in.multicast&lt;/li&gt;
+&lt;li&gt;net.if.in.packets&lt;/li&gt;
+&lt;li&gt;net.if.out.bytes&lt;/li&gt;
+&lt;li&gt;net.if.out.carrier.errs&lt;/li&gt;
+&lt;li&gt;net.if.out.collisions&lt;/li&gt;
+&lt;li&gt;net.if.out.compressed&lt;/li&gt;
+&lt;li&gt;net.if.out.dropped&lt;/li&gt;
+&lt;li&gt;net.if.out.errors&lt;/li&gt;
+&lt;li&gt;net.if.out.fifo.errs&lt;/li&gt;
+&lt;li&gt;net.if.out.packets&lt;/li&gt;
+&lt;li&gt;net.if.total.bytes&lt;/li&gt;
+&lt;li&gt;net.if.total.dropped&lt;/li&gt;
+&lt;li&gt;net.if.total.errors&lt;/li&gt;
+&lt;li&gt;net.if.total.packets&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;采集方法，读取/proc/net/dev的内容&lt;br&gt;具体实现代码：&lt;a href=&quot;http://pastebin.ubuntu.com/18293996/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;http://pastebin.ubuntu.com/18293996/&lt;/a&gt;&lt;/p&gt;
+&lt;h4 id=&quot;端口信息采集&quot;&gt;&lt;a href=&quot;#端口信息采集&quot; class=&quot;headerlink&quot; title=&quot;端口信息采集&quot;&gt;&lt;/a&gt;端口信息采集&lt;/h4&gt;&lt;p&gt;linux 查看开放端口命令：ss -tln&lt;br&gt;采集方法：利用golang 调用系统命令的方式获取开放的端口&lt;/p&gt;
+&lt;h4 id=&quot;进程状态采集&quot;&gt;&lt;a href=&quot;#进程状态采集&quot; class=&quot;headerlink&quot; title=&quot;进程状态采集&quot;&gt;&lt;/a&gt;进程状态采集&lt;/h4&gt;&lt;p&gt;由于系统运行的进程非常多，所以这类采集需要用户配置&lt;br&gt;采集方法：读取 /proc/pid/status 下的内容&lt;/p&gt;
+&lt;h2 id=&quot;总结&quot;&gt;&lt;a href=&quot;#总结&quot; class=&quot;headerlink&quot; title=&quot;总结&quot;&gt;&lt;/a&gt;总结&lt;/h2&gt;&lt;p&gt;机器相关的采集项基本就是这些了，接下来将思考怎样接收业务数据，以及对数据的转发处理&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&quot;参考：&quot;&gt;&lt;a href=&quot;#参考：&quot; class=&quot;headerlink&quot; title=&quot;参考：&quot;&gt;&lt;/a&gt;参考：&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.zabbix.com/documentation/3.2/manual/config/items/itemtypes/zabbix_agent&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;zabbix agent&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/open-falcon/book/blob/master/zh/faq/linux-metrics.md&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Linux运维基础采集项&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://www.penglixun.com/tech/system/how_to_calc_load_cpu.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;cpu idle计算原理&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://melody-dc.com/2015/11/21/%E7%90%86%E8%A7%A3CPU-steal-time/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;理解CPU-steal-time&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://wendal.net/2012/1224.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;在Golang中获取系统的磁盘空间内存占用&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://547502462.blog.163.com/blog/static/633048222012834230731/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;iostat 各项指标含义&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.pythian.com/blog/basic-io-monitoring-on-linux&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Basic I/O Monitoring on Linux&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;回顾：&quot;&gt;&lt;a href=&quot;#回顾：&quot; class=&quot;headerlink&quot; title=&quot;回顾：&quot;&gt;&lt;/a&gt;回顾：&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://blog.x2know.org/2016/06/28/monitor-system/&quot;&gt;企业级监控系统设计实践（一）&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;数据采集&quot;&gt;&lt;a href=&quot;#数据采集&quot; class=&quot;headerlink&quot; title=&quot;数据采集&quot;&gt;&lt;/a&gt;数据采集&lt;/h1&gt;&lt;p&gt;数据采集大致分为两种：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;机器指标&lt;/li&gt;
+&lt;li&gt;业务数据&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;采集方式
+    
+    </summary>
+    
+    
+      <category term="监控" scheme="http://blog.x2know.org/tags/%E7%9B%91%E6%8E%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>企业级监控系统设计实践（一）</title>
     <link href="http://blog.x2know.org/2016/06/28/monitor-system/"/>
     <id>http://blog.x2know.org/2016/06/28/monitor-system/</id>
     <published>2016-06-27T16:00:32.000Z</published>
-    <updated>2016-06-27T16:19:38.000Z</updated>
+    <updated>2016-07-05T16:00:49.000Z</updated>
     
     <content type="html">&lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;从公司产品上线的那一天就开始需要运维，而监控则是运维中重要的一环，那我们想一下，为什么要监控呢，因为要保证线上服务出问题之后或者即将出问题时能立刻感知，此外有些数据我们想知道它的发展趋势。这其实已经道出了监控的最小功能点：&lt;br&gt;&lt;strong&gt;收集信息，进行处理，发出提醒，数据展示&lt;/strong&gt;&lt;/p&gt;
 &lt;h3 id=&quot;阶段一：&quot;&gt;&lt;a href=&quot;#阶段一：&quot; class=&quot;headerlink&quot; title=&quot;阶段一：&quot;&gt;&lt;/a&gt;阶段一：&lt;/h3&gt;&lt;p&gt;机器数量：n &amp;lt; 5&lt;br&gt;假如公司的只有一款产品部署在一台机器，那我们只要写一个监控脚本，收集机器的信息和业务指标，再加一些判断，就完事了&lt;br&gt;&lt;a id=&quot;more&quot;&gt;&lt;/a&gt;&lt;/p&gt;

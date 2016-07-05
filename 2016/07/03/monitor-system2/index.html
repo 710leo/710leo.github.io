@@ -1,0 +1,134 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title> 企业级监控系统设计实践（二） · AsuraQin</title><meta name="description" content="企业级监控系统设计实践（二） - qinyening"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="short icon" href="/favicon.png"><link rel="stylesheet" href="/css/apollo.css"><link rel="stylesheet" href="http://fonts.useso.com/css?family=Source+Sans+Pro:400,600" type="text/css"></head><body><div class="wrap"><header><a href="/" class="logo-link"><img src="/favicon.png"></a><ul class="nav nav-list"><li class="nav-list-item"><a href="/" target="_self" class="nav-list-link">BLOG</a></li><li class="nav-list-item"><a href="/archives/" target="_self" class="nav-list-link">ARCHIVE</a></li><li class="nav-list-item"><a href="http://weibo.com/710x710" target="_blank" class="nav-list-link">WEIBO</a></li><li class="nav-list-item"><a href="https://github.com/710leo" target="_blank" class="nav-list-link">GITHUB</a></li><li class="nav-list-item"><a href="/atom.xml" target="_self" class="nav-list-link">RSS</a></li></ul></header><section class="container"><div class="post"><article class="post-block"><h1 class="post-title">企业级监控系统设计实践（二）</h1><div class="post-info">Jul 3, 2016</div><div class="post-content"><h1 id="数据采集"><a href="#数据采集" class="headerlink" title="数据采集"></a>数据采集</h1><p>数据采集大致分为两种：</p>
+<ul>
+<li>机器指标</li>
+<li>业务数据</li>
+</ul>
+<p>采集方式也有两种：push和pull<br>当agent数量非常庞大时，如果采用pull的方式，server端需要保持大量的链接，非常消耗性能，所以我们采用agent push数据的方式</p>
+<h2 id="首先总结下机器指标的采集"><a href="#首先总结下机器指标的采集" class="headerlink" title="首先总结下机器指标的采集"></a>首先总结下机器指标的采集</h2><h4 id="cpu"><a href="#cpu" class="headerlink" title="cpu"></a>cpu</h4><ul>
+<li>cpu.busy</li>
+<li>cpu.cnt</li>
+<li>cpu.guest</li>
+<li>cpu.idle</li>
+<li>cpu.iowait</li>
+<li>cpu.irq</li>
+<li>cpu.nice</li>
+<li>cpu.softirq</li>
+<li>cpu.steal</li>
+<li>cpu.system</li>
+<li>cpu.user</li>
+</ul>
+<p>如何计算cpu利用率呢？<br>计算原理如下：<a href="http://blog.csdn.net/rheostat/article/details/8167479" target="_blank" rel="external">传送门</a></p>
+<p>首先得到每个cpu的状态，封装成一个函数CurrentProcStat()<br>代码如下<br><a href="http://pastebin.ubuntu.com/18247784/" target="_blank" rel="external">http://pastebin.ubuntu.com/18247784/</a></p>
+<p>然后将得到的数据存到一个数组 procStatHistory 中，定期跟新数组中的cpu的状态值</p>
+<pre><code>func UpdateCpuStat() error {
+    ps, err := CurrentProcStat() 
+    if err != nil {
+        return err
+    }
+    psLock.Lock()
+    defer psLock.Unlock()
+    for i := historyCount - 1; i &gt; 0; i-- {
+        procStatHistory[i] = procStatHistory[i-1]
+    }
+    procStatHistory[0] = ps
+    return nil
+}
+</code></pre><p>计算结果</p>
+<pre><code>cpuIdle := float64(procStatHistory[0].Cpu.Idle-procStatHistory[1].Cpu.Idle)*100.00/float64(procStatHistory[0].Cpu.Total - procStatHistory[1].Cpu.Total)
+</code></pre><h4 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h4><p>一般内存监控一下几个指标即可</p>
+<ul>
+<li>memfree</li>
+<li>memtotal</li>
+<li>memused</li>
+<li>swapfree</li>
+<li>swaptotal</li>
+<li>swapused</li>
+</ul>
+<p>这些指标的数据可以从/proc/meminfo中获取,linux下输入 cat /proc/meminfo 得到以下信息<br><img src="http://x2know.qiniudn.com/meminfo.jpg" alt="此处输入图片的描述"><br>几个主要指标的说明</p>
+<blockquote>
+<p>MemTotal — 总的内存大小，单位kb<br>MemFree    — 空闲的内存大小，单位kb<br>SwapTotal — 总swap大小，单位kb<br>SwapFree — 空闲wsap大小，单位kb</p>
+</blockquote>
+<p>获取内存的具体代码实现 <a href="http://pastebin.ubuntu.com/16199860/" target="_blank" rel="external">http://pastebin.ubuntu.com/16199860/</a></p>
+<h4 id="磁盘相关采集项"><a href="#磁盘相关采集项" class="headerlink" title="磁盘相关采集项"></a>磁盘相关采集项</h4><ul>
+<li>df.bytes.free</li>
+<li>df.bytes.total</li>
+<li>df.bytes.used</li>
+<li>df.inodes.free</li>
+<li>df.inodes.total</li>
+<li>df.inodes.used</li>
+</ul>
+<p>linux下查看命令：df -lh(/ih)<br>采集方法：<br>读取/proc/mounts拿到所有挂载点<br>具体代码：<a href="http://pastebin.ubuntu.com/16201041" target="_blank" rel="external">http://pastebin.ubuntu.com/16201041</a></p>
+<p>通过golang <a href="https://golang.org/pkg/syscall/" target="_blank" rel="external">syscall</a>包中的 Statfs函数得到磁盘blocks和inode的使用情况。<br>具体代码如下：<a href="http://pastebin.ubuntu.com/18287842" target="_blank" rel="external">http://pastebin.ubuntu.com/18287842</a></p>
+<h4 id="磁盘io采集项"><a href="#磁盘io采集项" class="headerlink" title="磁盘io采集项"></a>磁盘io采集项</h4><ul>
+<li>disk.io.avgqu-sz  平均每次设备I/O操作的数据大小</li>
+<li>disk.io.avgrq-sz  平均I/O队列长度</li>
+<li>disk.io.await  平均每次设备I/O操作的等待时间</li>
+<li>disk.io.ios_in_progress  </li>
+<li>disk.io.msec_read  读消耗时间</li>
+<li>disk.io.msec_write 写消耗时间</li>
+<li>disk.io.msec_total io总消耗时间</li>
+<li>disk.io.msec_weighted_total  加权io总消耗时间</li>
+<li>disk.io.read_bytes</li>
+<li>disk.io.read_merged</li>
+<li>disk.io.read_requests </li>
+<li>disk.io.read_sectors</li>
+<li>disk.io.write_bytes </li>
+<li>disk.io.write_merged</li>
+<li>disk.io.write_requests</li>
+<li>disk.io.write_sectors</li>
+<li>disk.io.svctm  平均每次io消耗时间</li>
+<li>disk.io.util 单位时间内（1s）读写占用时间比例</li>
+</ul>
+<p>linux下查看命令：<a href="http://linux.die.net/man/1/iostat" target="_blank" rel="external">iostat</a></p>
+<h4 id="机器负载采集项"><a href="#机器负载采集项" class="headerlink" title="机器负载采集项"></a>机器负载采集项</h4><ul>
+<li>load.1min</li>
+<li>load.5min</li>
+<li>load.15min<br>采集方法：直接读取/proc/loadavg<br>linux下查看命令：top</li>
+</ul>
+<h4 id="网络相关采集项"><a href="#网络相关采集项" class="headerlink" title="网络相关采集项"></a>网络相关采集项</h4><ul>
+<li>net.if.in.compressed</li>
+<li>net.if.in.dropped</li>
+<li>net.if.in.errors</li>
+<li>net.if.in.fifo.errs</li>
+<li>net.if.in.frame.errs</li>
+<li>net.if.in.multicast</li>
+<li>net.if.in.packets</li>
+<li>net.if.out.bytes</li>
+<li>net.if.out.carrier.errs</li>
+<li>net.if.out.collisions</li>
+<li>net.if.out.compressed</li>
+<li>net.if.out.dropped</li>
+<li>net.if.out.errors</li>
+<li>net.if.out.fifo.errs</li>
+<li>net.if.out.packets</li>
+<li>net.if.total.bytes</li>
+<li>net.if.total.dropped</li>
+<li>net.if.total.errors</li>
+<li>net.if.total.packets</li>
+</ul>
+<p>采集方法，读取/proc/net/dev的内容<br>具体实现代码：<a href="http://pastebin.ubuntu.com/18293996/" target="_blank" rel="external">http://pastebin.ubuntu.com/18293996/</a></p>
+<h4 id="端口信息采集"><a href="#端口信息采集" class="headerlink" title="端口信息采集"></a>端口信息采集</h4><p>linux 查看开放端口命令：ss -tln<br>采集方法：利用golang 调用系统命令的方式获取开放的端口</p>
+<h4 id="进程状态采集"><a href="#进程状态采集" class="headerlink" title="进程状态采集"></a>进程状态采集</h4><p>由于系统运行的进程非常多，所以这类采集需要用户配置<br>采集方法：读取 /proc/pid/status 下的内容</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>机器相关的采集项基本就是这些了，接下来将思考怎样接收业务数据，以及对数据的转发处理</p>
+<hr>
+<h2 id="参考："><a href="#参考：" class="headerlink" title="参考："></a>参考：</h2><ul>
+<li><a href="https://www.zabbix.com/documentation/3.2/manual/config/items/itemtypes/zabbix_agent" target="_blank" rel="external">zabbix agent</a></li>
+<li><a href="https://github.com/open-falcon/book/blob/master/zh/faq/linux-metrics.md" target="_blank" rel="external">Linux运维基础采集项</a></li>
+<li><a href="http://www.penglixun.com/tech/system/how_to_calc_load_cpu.html" target="_blank" rel="external">cpu idle计算原理</a></li>
+<li><a href="http://melody-dc.com/2015/11/21/%E7%90%86%E8%A7%A3CPU-steal-time/" target="_blank" rel="external">理解CPU-steal-time</a></li>
+<li><a href="http://wendal.net/2012/1224.html" target="_blank" rel="external">在Golang中获取系统的磁盘空间内存占用</a></li>
+<li><a href="http://547502462.blog.163.com/blog/static/633048222012834230731/" target="_blank" rel="external">iostat 各项指标含义</a></li>
+<li><a href="https://www.pythian.com/blog/basic-io-monitoring-on-linux" target="_blank" rel="external">Basic I/O Monitoring on Linux</a></li>
+</ul>
+<h2 id="回顾："><a href="#回顾：" class="headerlink" title="回顾："></a>回顾：</h2><ul>
+<li><a href="http://blog.x2know.org/2016/06/28/monitor-system/">企业级监控系统设计实践（一）</a></li>
+</ul>
+</div></article></div></section><footer><div class="paginator"><a href="/2016/06/28/monitor-system/" class="next">NEXT</a></div><div id="disqus_thread"></div><script>var disqus_shortname = '710leo';
+var disqus_identifier = '2016/07/03/monitor-system2/';
+var disqus_title = '企业级监控系统设计实践（二）';
+var disqus_url = 'http://blog.x2know.org/2016/07/03/monitor-system2/';
+(function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();</script><script id="dsq-count-scr" src="//710leo.disqus.com/count.js" async></script><div class="copyright"><p>© 2014 - 2016 <a href="http://blog.x2know.org">qinyening</a>, unless otherwise noted.</p></div></footer></div><script async src="//cdn.bootcss.com/mathjax/2.6.1/MathJax.js?config=TeX-MML-AM_CHTML"></script><script>(function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;e=o.createElement(i);r=o.getElementsByTagName(i)[0];e.src='//www.google-analytics.com/analytics.js';r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));ga('create',"UA-54783341-1",'auto');ga('send','pageview');</script></body></html>
