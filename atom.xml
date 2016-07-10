@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://blog.x2know.org/"/>
-  <updated>2016-07-05T16:12:20.000Z</updated>
+  <updated>2016-07-10T15:52:49.000Z</updated>
   <id>http://blog.x2know.org/</id>
   
   <author>
@@ -16,13 +16,105 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>企业级监控系统设计实践（二）</title>
+    <title>企业级监控系统设计实践（三）数据转发</title>
+    <link href="http://blog.x2know.org/2016/07/07/monitor-system3/"/>
+    <id>http://blog.x2know.org/2016/07/07/monitor-system3/</id>
+    <published>2016-07-07T15:58:56.000Z</published>
+    <updated>2016-07-10T15:52:49.000Z</updated>
+    
+    <content type="html">&lt;h2 id=&quot;插件&quot;&gt;&lt;a href=&quot;#插件&quot; class=&quot;headerlink&quot; title=&quot;插件&quot;&gt;&lt;/a&gt;插件&lt;/h2&gt;&lt;p&gt;上节讲了关于机器指标的采集，本节讲一下业务数据的采集，业务数据其实我们做的主要就是制定规范，告诉用户按照什么样的数据格式上报数据&lt;/p&gt;
+&lt;p&gt;根据经验，数据格式主要需要下面几个指标&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;metric&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;告诉监控系统数据项是什么&lt;br&gt;value&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;ensp;指标的数值&lt;br&gt;endpoint&amp;emsp;&amp;emsp;&amp;ensp;  上报数据的来源&lt;br&gt;tag&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp; 形式为a=b，通过tag可以匹配一批数据&lt;br&gt;timestamp&amp;emsp;&amp;ensp; 上报时间&lt;br&gt;step &amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp; 上报间隔&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;a id=&quot;more&quot;&gt;&lt;/a&gt;
+&lt;p&gt;上节中提到了数据大致分为两类，其实还有一类比较特殊的情况。&lt;br&gt;比如有个深度学习的部门，有100台机器，他们想要监控这些机器的GPU信息，这些信息不够通用，所以不能通过agent采集，但如果用户自己采集的话，将脚本部署到100台机器上又很麻烦，那怎么办呢？用户自己部署脚本麻烦，就让agent帮忙部署，具体流程如下：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;用户只要把自己写的脚本安装规范写好&lt;/li&gt;
+&lt;li&gt;发布到指定的git上&lt;/li&gt;
+&lt;li&gt;agent根据git地址将脚本全部拉取到本地&lt;/li&gt;
+&lt;li&gt;用户在一个配置中心设置哪些机器执行哪些插件&lt;/li&gt;
+&lt;li&gt;agent根据配置运行指定的插件&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;到这里数据的采集已经完成了，下面开始思考怎么接收数据，然后用来告警判断和绘图。&lt;/p&gt;
+&lt;h2 id=&quot;数据转发&quot;&gt;&lt;a href=&quot;#数据转发&quot; class=&quot;headerlink&quot; title=&quot;数据转发&quot;&gt;&lt;/a&gt;数据转发&lt;/h2&gt;&lt;p&gt;如果负责告警判断和绘图的组件都是无状态的，那这些组件前面只要挂一个lvs，直接将数据推送上去即可。但如果组件是有状态的，那就要额外需要一个组件，来保证同一条信息每次都发送到相同的机器上去。&lt;/p&gt;
+&lt;p&gt;这个转发数据的组件就先起名叫transfer，下面就主要讲一下transfer的功能需要和具体实现，&lt;br&gt;功能需求：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;同一条数据每次都转发到同一个机器上&lt;/li&gt;
+&lt;li&gt;数据要保证快速转发&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;具体实现：&lt;/p&gt;
+&lt;p&gt;要保证数据的一致性，最简单的是对上报的数据做hash，然后取余，但这样有一个问题，当后端的机器挂掉一台或者增加一台时，会有大量数据需要迁移，解决这个问题有两种方法：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;把每个数据上报的对应关系记录到一个路由表中，当后端机器个数发生变化时，原来的数据不进行迁移，新数据的分配重新记录到一个路由表中，旧数据慢慢往新数据迁移&lt;/li&gt;
+&lt;li&gt;利用一致性hash算法，做到后端机器数变化时，只有少量数据进行迁移&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;第一种方法可以保证数据没有丢失，但路由表的维护成本很高&lt;br&gt;第二种方法虽然在数据迁移时会有少部分数据丢失，实现起来比第一种简单&lt;/p&gt;
+&lt;p&gt;于是决定采用第二种方式，下面讲下具体代码实现goalng版&lt;br&gt;首先需要一个hash环&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;import &amp;quot;stathat.com/c/consistent&amp;quot;
+
+type ConsistentHashNodeRing struct {
+    ring *consistent.Consistent
+}
+func NewConsistentHashNodeRing(NumberOfReplicas int, nodes []string) *ConsistentHashNodeRing {
+    ret := &amp;amp;ConsistentHashNodeRing{ring: consistent.New()}
+    ret.SetNumberOfReplicas(NumberOfReplicas)
+    ret.SetNodes(nodes)
+    return ret
+}
+//设置虚拟节点个数
+func (this *ConsistentHashNodeRing) SetNumberOfReplicas(num int) {
+    this.ring.NumberOfReplicas = num
+}
+
+//增加实际节点
+func (this *ConsistentHashNodeRing) SetNodes(nodes []string) {
+    for _, node := range nodes {
+        this.ring.Add(node)
+    }
+}   
+//拿到某个数据属于的节点
+func (this *ConsistentHashNodeRing) GetNode(pk string) (string, error) {
+    return this.ring.Get(pk)
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;通过NewConsistentHashNodeRing()这个函数，初始化一个一致性hash环，hash环的节点是一个后端机器地址相关的map中的key，通过GetNode()，拿到上报数据对应的节点，再得到要发送的后端地址。&lt;/p&gt;
+&lt;h4 id=&quot;使用队列&quot;&gt;&lt;a href=&quot;#使用队列&quot; class=&quot;headerlink&quot; title=&quot;使用队列&quot;&gt;&lt;/a&gt;使用队列&lt;/h4&gt;&lt;p&gt;如果拿到数据后即刻就就像后端转发，这样会有大量链接，每个链接只发送很少的数据，对网络资源造成浪费，怎么优化这个问题呢？我们可以针对每一个节点建立一个queue，然后定期从queue读取数据向后端转发，这样每个连接可以发送一批数据，提高对连接的利用率。&lt;/p&gt;
+&lt;h4 id=&quot;使用连接池&quot;&gt;&lt;a href=&quot;#使用连接池&quot; class=&quot;headerlink&quot; title=&quot;使用连接池&quot;&gt;&lt;/a&gt;使用连接池&lt;/h4&gt;&lt;p&gt;但当上报的数据非常大时，比如现在小米的监控系统每分钟要接受3000W条数据，虽然有了queue做缓冲，但transfer组件向后端发起的连接仍然非常多，此时为了提高效率，可以使用连接池。&lt;/p&gt;
+&lt;p&gt;到这里，数据转发这个组件的开发思路已经讲完了，下面开始讲解告警判断和历史绘图&lt;/p&gt;
+&lt;h2 id=&quot;参考：&quot;&gt;&lt;a href=&quot;#参考：&quot; class=&quot;headerlink&quot; title=&quot;参考：&quot;&gt;&lt;/a&gt;参考：&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/open-falcon/transfer&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;open-falcon tranfer&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;插件&quot;&gt;&lt;a href=&quot;#插件&quot; class=&quot;headerlink&quot; title=&quot;插件&quot;&gt;&lt;/a&gt;插件&lt;/h2&gt;&lt;p&gt;上节讲了关于机器指标的采集，本节讲一下业务数据的采集，业务数据其实我们做的主要就是制定规范，告诉用户按照什么样的数据格式上报数据&lt;/p&gt;
+&lt;p&gt;根据经验，数据格式主要需要下面几个指标&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;metric&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;告诉监控系统数据项是什么&lt;br&gt;value&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;ensp;指标的数值&lt;br&gt;endpoint&amp;emsp;&amp;emsp;&amp;ensp;  上报数据的来源&lt;br&gt;tag&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp; 形式为a=b，通过tag可以匹配一批数据&lt;br&gt;timestamp&amp;emsp;&amp;ensp; 上报时间&lt;br&gt;step &amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp; 上报间隔&lt;/p&gt;
+&lt;/blockquote&gt;
+    
+    </summary>
+    
+    
+      <category term="监控" scheme="http://blog.x2know.org/tags/%E7%9B%91%E6%8E%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>企业级监控系统设计实践（二）数据采集</title>
     <link href="http://blog.x2know.org/2016/07/03/monitor-system2/"/>
     <id>http://blog.x2know.org/2016/07/03/monitor-system2/</id>
     <published>2016-07-03T15:54:43.000Z</published>
-    <updated>2016-07-05T16:12:20.000Z</updated>
+    <updated>2016-07-10T15:34:02.000Z</updated>
     
-    <content type="html">&lt;h1 id=&quot;数据采集&quot;&gt;&lt;a href=&quot;#数据采集&quot; class=&quot;headerlink&quot; title=&quot;数据采集&quot;&gt;&lt;/a&gt;数据采集&lt;/h1&gt;&lt;p&gt;数据采集大致分为两种：&lt;/p&gt;
+    <content type="html">&lt;h1 id=&quot;数据采集&quot;&gt;&lt;a href=&quot;#数据采集&quot; class=&quot;headerlink&quot; title=&quot;数据采集&quot;&gt;&lt;/a&gt;数据采集&lt;/h1&gt;&lt;p&gt;收到数据采集，那我们主要需要哪些数据呢？&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;机器的状态，cpu，内存&lt;/li&gt;
+&lt;li&gt;业务自己产生的数据，如qps等&lt;/li&gt;
+&lt;li&gt;mysql，redis等开源软件自身的状态数据&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;上面的数据大致可以分为两类：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;机器指标&lt;/li&gt;
 &lt;li&gt;业务数据&lt;/li&gt;
@@ -151,7 +243,13 @@
     
     <summary type="html">
     
-      &lt;h1 id=&quot;数据采集&quot;&gt;&lt;a href=&quot;#数据采集&quot; class=&quot;headerlink&quot; title=&quot;数据采集&quot;&gt;&lt;/a&gt;数据采集&lt;/h1&gt;&lt;p&gt;数据采集大致分为两种：&lt;/p&gt;
+      &lt;h1 id=&quot;数据采集&quot;&gt;&lt;a href=&quot;#数据采集&quot; class=&quot;headerlink&quot; title=&quot;数据采集&quot;&gt;&lt;/a&gt;数据采集&lt;/h1&gt;&lt;p&gt;收到数据采集，那我们主要需要哪些数据呢？&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;机器的状态，cpu，内存&lt;/li&gt;
+&lt;li&gt;业务自己产生的数据，如qps等&lt;/li&gt;
+&lt;li&gt;mysql，redis等开源软件自身的状态数据&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;上面的数据大致可以分为两类：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;机器指标&lt;/li&gt;
 &lt;li&gt;业务数据&lt;/li&gt;

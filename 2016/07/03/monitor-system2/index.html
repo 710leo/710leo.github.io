@@ -1,4 +1,10 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title> 企业级监控系统设计实践（二） · AsuraQin</title><meta name="description" content="企业级监控系统设计实践（二） - qinyening"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="short icon" href="/favicon.png"><link rel="stylesheet" href="/css/apollo.css"><link rel="stylesheet" href="http://fonts.useso.com/css?family=Source+Sans+Pro:400,600" type="text/css"></head><body><div class="wrap"><header><a href="/" class="logo-link"><img src="/favicon.png"></a><ul class="nav nav-list"><li class="nav-list-item"><a href="/" target="_self" class="nav-list-link">BLOG</a></li><li class="nav-list-item"><a href="/archives/" target="_self" class="nav-list-link">ARCHIVE</a></li><li class="nav-list-item"><a href="http://weibo.com/710x710" target="_blank" class="nav-list-link">WEIBO</a></li><li class="nav-list-item"><a href="https://github.com/710leo" target="_blank" class="nav-list-link">GITHUB</a></li><li class="nav-list-item"><a href="/atom.xml" target="_self" class="nav-list-link">RSS</a></li></ul></header><section class="container"><div class="post"><article class="post-block"><h1 class="post-title">企业级监控系统设计实践（二）</h1><div class="post-info">Jul 3, 2016</div><div class="post-content"><h1 id="数据采集"><a href="#数据采集" class="headerlink" title="数据采集"></a>数据采集</h1><p>数据采集大致分为两种：</p>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title> 企业级监控系统设计实践（二）数据采集 · AsuraQin</title><meta name="description" content="企业级监控系统设计实践（二）数据采集 - qinyening"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="short icon" href="/favicon.png"><link rel="stylesheet" href="/css/apollo.css"><link rel="stylesheet" href="http://fonts.useso.com/css?family=Source+Sans+Pro:400,600" type="text/css"></head><body><div class="wrap"><header><a href="/" class="logo-link"><img src="/favicon.png"></a><ul class="nav nav-list"><li class="nav-list-item"><a href="/" target="_self" class="nav-list-link">BLOG</a></li><li class="nav-list-item"><a href="/archives/" target="_self" class="nav-list-link">ARCHIVE</a></li><li class="nav-list-item"><a href="http://weibo.com/710x710" target="_blank" class="nav-list-link">WEIBO</a></li><li class="nav-list-item"><a href="https://github.com/710leo" target="_blank" class="nav-list-link">GITHUB</a></li><li class="nav-list-item"><a href="/atom.xml" target="_self" class="nav-list-link">RSS</a></li></ul></header><section class="container"><div class="post"><article class="post-block"><h1 class="post-title">企业级监控系统设计实践（二）数据采集</h1><div class="post-info">Jul 3, 2016</div><div class="post-content"><h1 id="数据采集"><a href="#数据采集" class="headerlink" title="数据采集"></a>数据采集</h1><p>收到数据采集，那我们主要需要哪些数据呢？</p>
+<ul>
+<li>机器的状态，cpu，内存</li>
+<li>业务自己产生的数据，如qps等</li>
+<li>mysql，redis等开源软件自身的状态数据</li>
+</ul>
+<p>上面的数据大致可以分为两类：</p>
 <ul>
 <li>机器指标</li>
 <li>业务数据</li>
@@ -123,9 +129,9 @@
 <h2 id="回顾："><a href="#回顾：" class="headerlink" title="回顾："></a>回顾：</h2><ul>
 <li><a href="http://blog.x2know.org/2016/06/28/monitor-system/">企业级监控系统设计实践（一）</a></li>
 </ul>
-</div></article></div></section><footer><div class="paginator"><a href="/2016/06/28/monitor-system/" class="next">NEXT</a></div><div id="disqus_thread"></div><script>var disqus_shortname = '710leo';
+</div></article></div></section><footer><div class="paginator"><a href="/2016/07/07/monitor-system3/" class="prev">上一篇</a><a href="/2016/06/28/monitor-system/" class="next">下一篇</a></div><div id="disqus_thread"></div><script>var disqus_shortname = '710leo';
 var disqus_identifier = '2016/07/03/monitor-system2/';
-var disqus_title = '企业级监控系统设计实践（二）';
+var disqus_title = '企业级监控系统设计实践（二）数据采集';
 var disqus_url = 'http://blog.x2know.org/2016/07/03/monitor-system2/';
 (function() {
     var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

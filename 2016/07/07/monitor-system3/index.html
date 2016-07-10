@@ -1,0 +1,71 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title> 企业级监控系统设计实践（三）数据转发 · AsuraQin</title><meta name="description" content="企业级监控系统设计实践（三）数据转发 - qinyening"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="short icon" href="/favicon.png"><link rel="stylesheet" href="/css/apollo.css"><link rel="stylesheet" href="http://fonts.useso.com/css?family=Source+Sans+Pro:400,600" type="text/css"></head><body><div class="wrap"><header><a href="/" class="logo-link"><img src="/favicon.png"></a><ul class="nav nav-list"><li class="nav-list-item"><a href="/" target="_self" class="nav-list-link">BLOG</a></li><li class="nav-list-item"><a href="/archives/" target="_self" class="nav-list-link">ARCHIVE</a></li><li class="nav-list-item"><a href="http://weibo.com/710x710" target="_blank" class="nav-list-link">WEIBO</a></li><li class="nav-list-item"><a href="https://github.com/710leo" target="_blank" class="nav-list-link">GITHUB</a></li><li class="nav-list-item"><a href="/atom.xml" target="_self" class="nav-list-link">RSS</a></li></ul></header><section class="container"><div class="post"><article class="post-block"><h1 class="post-title">企业级监控系统设计实践（三）数据转发</h1><div class="post-info">Jul 7, 2016</div><div class="post-content"><h2 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h2><p>上节讲了关于机器指标的采集，本节讲一下业务数据的采集，业务数据其实我们做的主要就是制定规范，告诉用户按照什么样的数据格式上报数据</p>
+<p>根据经验，数据格式主要需要下面几个指标</p>
+<blockquote>
+<p>metric&emsp;&emsp;&emsp;&emsp;告诉监控系统数据项是什么<br>value&emsp;&emsp;&emsp;&emsp;&ensp;指标的数值<br>endpoint&emsp;&emsp;&ensp;  上报数据的来源<br>tag&emsp;&emsp;&emsp;&emsp;&emsp; 形式为a=b，通过tag可以匹配一批数据<br>timestamp&emsp;&ensp; 上报时间<br>step &emsp;&emsp;&emsp;&emsp; 上报间隔</p>
+</blockquote>
+<a id="more"></a>
+<p>上节中提到了数据大致分为两类，其实还有一类比较特殊的情况。<br>比如有个深度学习的部门，有100台机器，他们想要监控这些机器的GPU信息，这些信息不够通用，所以不能通过agent采集，但如果用户自己采集的话，将脚本部署到100台机器上又很麻烦，那怎么办呢？用户自己部署脚本麻烦，就让agent帮忙部署，具体流程如下：</p>
+<ol>
+<li>用户只要把自己写的脚本安装规范写好</li>
+<li>发布到指定的git上</li>
+<li>agent根据git地址将脚本全部拉取到本地</li>
+<li>用户在一个配置中心设置哪些机器执行哪些插件</li>
+<li>agent根据配置运行指定的插件</li>
+</ol>
+<p>到这里数据的采集已经完成了，下面开始思考怎么接收数据，然后用来告警判断和绘图。</p>
+<h2 id="数据转发"><a href="#数据转发" class="headerlink" title="数据转发"></a>数据转发</h2><p>如果负责告警判断和绘图的组件都是无状态的，那这些组件前面只要挂一个lvs，直接将数据推送上去即可。但如果组件是有状态的，那就要额外需要一个组件，来保证同一条信息每次都发送到相同的机器上去。</p>
+<p>这个转发数据的组件就先起名叫transfer，下面就主要讲一下transfer的功能需要和具体实现，<br>功能需求：</p>
+<ul>
+<li>同一条数据每次都转发到同一个机器上</li>
+<li>数据要保证快速转发</li>
+</ul>
+<p>具体实现：</p>
+<p>要保证数据的一致性，最简单的是对上报的数据做hash，然后取余，但这样有一个问题，当后端的机器挂掉一台或者增加一台时，会有大量数据需要迁移，解决这个问题有两种方法：</p>
+<ul>
+<li>把每个数据上报的对应关系记录到一个路由表中，当后端机器个数发生变化时，原来的数据不进行迁移，新数据的分配重新记录到一个路由表中，旧数据慢慢往新数据迁移</li>
+<li>利用一致性hash算法，做到后端机器数变化时，只有少量数据进行迁移</li>
+</ul>
+<p>第一种方法可以保证数据没有丢失，但路由表的维护成本很高<br>第二种方法虽然在数据迁移时会有少部分数据丢失，实现起来比第一种简单</p>
+<p>于是决定采用第二种方式，下面讲下具体代码实现goalng版<br>首先需要一个hash环</p>
+<pre><code>import &quot;stathat.com/c/consistent&quot;
+
+type ConsistentHashNodeRing struct {
+    ring *consistent.Consistent
+}
+func NewConsistentHashNodeRing(NumberOfReplicas int, nodes []string) *ConsistentHashNodeRing {
+    ret := &amp;ConsistentHashNodeRing{ring: consistent.New()}
+    ret.SetNumberOfReplicas(NumberOfReplicas)
+    ret.SetNodes(nodes)
+    return ret
+}
+//设置虚拟节点个数
+func (this *ConsistentHashNodeRing) SetNumberOfReplicas(num int) {
+    this.ring.NumberOfReplicas = num
+}
+
+//增加实际节点
+func (this *ConsistentHashNodeRing) SetNodes(nodes []string) {
+    for _, node := range nodes {
+        this.ring.Add(node)
+    }
+}   
+//拿到某个数据属于的节点
+func (this *ConsistentHashNodeRing) GetNode(pk string) (string, error) {
+    return this.ring.Get(pk)
+}
+</code></pre><p>通过NewConsistentHashNodeRing()这个函数，初始化一个一致性hash环，hash环的节点是一个后端机器地址相关的map中的key，通过GetNode()，拿到上报数据对应的节点，再得到要发送的后端地址。</p>
+<h4 id="使用队列"><a href="#使用队列" class="headerlink" title="使用队列"></a>使用队列</h4><p>如果拿到数据后即刻就就像后端转发，这样会有大量链接，每个链接只发送很少的数据，对网络资源造成浪费，怎么优化这个问题呢？我们可以针对每一个节点建立一个queue，然后定期从queue读取数据向后端转发，这样每个连接可以发送一批数据，提高对连接的利用率。</p>
+<h4 id="使用连接池"><a href="#使用连接池" class="headerlink" title="使用连接池"></a>使用连接池</h4><p>但当上报的数据非常大时，比如现在小米的监控系统每分钟要接受3000W条数据，虽然有了queue做缓冲，但transfer组件向后端发起的连接仍然非常多，此时为了提高效率，可以使用连接池。</p>
+<p>到这里，数据转发这个组件的开发思路已经讲完了，下面开始讲解告警判断和历史绘图</p>
+<h2 id="参考："><a href="#参考：" class="headerlink" title="参考："></a>参考：</h2><ul>
+<li><a href="https://github.com/open-falcon/transfer" target="_blank" rel="external">open-falcon tranfer</a></li>
+</ul>
+</div></article></div></section><footer><div class="paginator"><a href="/2016/07/03/monitor-system2/" class="next">下一篇</a></div><div id="disqus_thread"></div><script>var disqus_shortname = '710leo';
+var disqus_identifier = '2016/07/07/monitor-system3/';
+var disqus_title = '企业级监控系统设计实践（三）数据转发';
+var disqus_url = 'http://blog.x2know.org/2016/07/07/monitor-system3/';
+(function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();</script><script id="dsq-count-scr" src="//710leo.disqus.com/count.js" async></script><div class="copyright"><p>© 2014 - 2016 <a href="http://blog.x2know.org">qinyening</a>, unless otherwise noted.</p></div></footer></div><script async src="//cdn.bootcss.com/mathjax/2.6.1/MathJax.js?config=TeX-MML-AM_CHTML"></script><script>(function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;e=o.createElement(i);r=o.getElementsByTagName(i)[0];e.src='//www.google-analytics.com/analytics.js';r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));ga('create',"UA-54783341-1",'auto');ga('send','pageview');</script></body></html>
