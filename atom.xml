@@ -406,7 +406,7 @@ func (this *ConsistentHashNodeRing) GetNode(pk string) (string, error) {
     <link href="http://blog.x2know.org/2016/06/25/open-falcon/"/>
     <id>http://blog.x2know.org/2016/06/25/open-falcon/</id>
     <published>2016-06-25T13:40:23.000Z</published>
-    <updated>2016-08-19T15:37:18.000Z</updated>
+    <updated>2016-08-19T15:54:41.000Z</updated>
     
     <content type="html">&lt;p&gt;参与开发和维护小米的falcon系统也有挺长时间了，总结一下falcon的一些优点和缺点。如果对falcon不了解，建议先对下这篇文章《&lt;a href=&quot;http://book.open-falcon.org/zh/intro/index.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;open-falcon介绍&lt;/a&gt;》&lt;/p&gt;
 &lt;p&gt;先说下具备的优势：&lt;/p&gt;
@@ -424,6 +424,10 @@ func (this *ConsistentHashNodeRing) GetNode(pk string) (string, error) {
 &lt;h3 id=&quot;nodata容易误报&quot;&gt;&lt;a href=&quot;#nodata容易误报&quot; class=&quot;headerlink&quot; title=&quot;nodata容易误报&quot;&gt;&lt;/a&gt;nodata容易误报&lt;/h3&gt;&lt;p&gt;现在nodate的处理逻辑是这样的，falcon-agent每个周期，会上报一个aagent.alive=1的指标，nodata每个周期会从后端历史数据接口获取最近一个点agent.alive的数据，如果获取不到，则自动上报一个agent.alive=1，这里会有一个问题，如果agent上报有延迟，在nodata查询的时候，数据还没上去，nodata会上报一个agent.alive=0，而后上报的agent.alive=1则会被丢弃，造成误报。&lt;br&gt;&lt;strong&gt;解决方案&lt;/strong&gt;：&lt;br&gt;之前nodata的方案需要数据重新从transfer到judge再走一遍。数据链路太长，新的方案直接通过judge组件完成，由judge维护一个上报数据来源的hostname列表，由于judge的每个counter都会保留最近的10点，所以通过hostname+agent.alive能拿到最近的数据点，如果当前时间点减去最近的时间点大于3个周期的时间，则基本可以说明数据已经不再上报了，然后触发一次告警判别，这种方案能很好的解决误报问题。&lt;/p&gt;
 &lt;h3 id=&quot;用户的一些操作权限设置不合理&quot;&gt;&lt;a href=&quot;#用户的一些操作权限设置不合理&quot; class=&quot;headerlink&quot; title=&quot;用户的一些操作权限设置不合理&quot;&gt;&lt;/a&gt;用户的一些操作权限设置不合理&lt;/h3&gt;&lt;p&gt;用户配置的策略只有自己可以修改，screen所有人都可以修改，有同事离职了，想做修改，需要直接操作数据库，这样很不好。&lt;br&gt;&lt;strong&gt;解决方案&lt;/strong&gt;：&lt;br&gt;用户在web端的所有操作都和所在的team绑定，同一个team的人可以修改，查看team对应的资源。&lt;/p&gt;
 &lt;h3 id=&quot;没有告警升级&quot;&gt;&lt;a href=&quot;#没有告警升级&quot; class=&quot;headerlink&quot; title=&quot;没有告警升级&quot;&gt;&lt;/a&gt;没有告警升级&lt;/h3&gt;&lt;p&gt;告警触发后，如果没人响应，达到最大报警次数后，有被忽略的风险。如果告警触发后，经过一段时间没有恢复，继续发给另一批人，再次对相关人员进行提醒。&lt;br&gt;&lt;strong&gt;解决方案&lt;/strong&gt;：&lt;br&gt;这个还没想到很好的解决方案，欢迎讨论: )&lt;/p&gt;
+&lt;h3 id=&quot;参考&quot;&gt;&lt;a href=&quot;#参考&quot; class=&quot;headerlink&quot; title=&quot;参考&quot;&gt;&lt;/a&gt;参考&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://www.jianshu.com/p/623b96175915&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Open-Falcon存在的问题，重写一套&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://book.open-falcon.org/zh/intro/index.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Open-Falcon介绍&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </content>
     
     <summary type="html">
