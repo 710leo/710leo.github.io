@@ -406,7 +406,7 @@ func (this *ConsistentHashNodeRing) GetNode(pk string) (string, error) {
     <link href="http://blog.x2know.org/2016/06/25/open-falcon/"/>
     <id>http://blog.x2know.org/2016/06/25/open-falcon/</id>
     <published>2016-06-25T13:40:23.000Z</published>
-    <updated>2016-08-10T13:46:44.000Z</updated>
+    <updated>2016-08-19T15:04:15.000Z</updated>
     
     <content type="html">&lt;p&gt;参与开发和维护小米的falcon系统也有挺长时间了，总结一下falcon的一些优点和缺点。如果对falcon不了解，建议先对下这篇文章《&lt;a href=&quot;http://book.open-falcon.org/zh/intro/index.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;open-falcon介绍&lt;/a&gt;》&lt;/p&gt;
 &lt;p&gt;先说下具备的优势：&lt;/p&gt;
@@ -418,7 +418,6 @@ func (this *ConsistentHashNodeRing) GetNode(pk string) (string, error) {
 &lt;li&gt;大部分用golang编写，部署相对简单&lt;/li&gt;
 &lt;/ul&gt;
 &lt;a id=&quot;more&quot;&gt;&lt;/a&gt;
-&lt;p&gt;其中最好用的是机器列表和hostgroup对应，hostgroup和策略模板对应，模板可以继承和覆盖，这样只要向hostgroup中加机器，这些机器会自动被监控起来。&lt;/p&gt;
 &lt;p&gt;说了优点，下面说说缺点以及改进方案&lt;/p&gt;
 &lt;h3 id=&quot;对上报数据没有做限制&quot;&gt;&lt;a href=&quot;#对上报数据没有做限制&quot; class=&quot;headerlink&quot; title=&quot;对上报数据没有做限制&quot;&gt;&lt;/a&gt;对上报数据没有做限制&lt;/h3&gt;&lt;p&gt;当时处于是内部系统的考虑就没有做权限方面的控制，现在发现如果用户操作失误，短时间内推送大量数据，对后端graph会产生很大的压力。所以权限这块要进行加强。&lt;br&gt;&lt;strong&gt;解决方案：&lt;/strong&gt;&lt;br&gt;上报指标和告警接收组绑定，每个告警接收组限定一个上报counter数，超出限额的部分不在接收。&lt;/p&gt;
 &lt;h3 id=&quot;策略模板继承和覆盖计算消耗大量资源&quot;&gt;&lt;a href=&quot;#策略模板继承和覆盖计算消耗大量资源&quot; class=&quot;headerlink&quot; title=&quot;策略模板继承和覆盖计算消耗大量资源&quot;&gt;&lt;/a&gt;策略模板继承和覆盖计算消耗大量资源&lt;/h3&gt;&lt;p&gt;目前每个周期judge从hbs获取策略时，所有策略的继承都要从新计算一遍，消耗大量cpu资源。&lt;br&gt;&lt;strong&gt;解决方案：&lt;/strong&gt;&lt;br&gt;由全量计算改为触发计算，新建一张表，记录父模板和字模板的对应关系，策略只要已发生改变，就立即找此模板对应的所有子模板，一直遍历下去，直到没有字模板为之，这样获取到的策略都是计算好的，直接从数据库读取即可，减少了cpu计算量&lt;/p&gt;
