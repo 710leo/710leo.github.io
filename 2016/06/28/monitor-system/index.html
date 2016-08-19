@@ -9,7 +9,7 @@
 <h3 id="阶段三："><a href="#阶段三：" class="headerlink" title="阶段三："></a>阶段三：</h3><p>机器数量：n &gt; 200<br>等公司规模继续扩大发展到非常大的规模，发展到5000台机器，每个机器假设有100个监控项，就是50W监控项，这样在mysql数据库储存方案就遇到了性能瓶颈，如果搭建多套zabbix，管理成本也会非常高昂。此时，就迫切需要根据公司的需求自己开发一套监控系统。下面就让我们思考下怎么开发一套监控系统。</p>
 <h3 id="总体设计"><a href="#总体设计" class="headerlink" title="总体设计"></a>总体设计</h3><p>现在我们需要开发一套监控系统，下面就思考一下整体的架构<br>首先我们要收集数据，数据包括机器指标和业务产生的数据，所以我们需要一个agent采集端。<br>有了数据后，有两个用途：1.画趋势图  2.做告警判断<br>所以还需要两个组件，一个负责储存并展示历史数据，一个负责告警判断<br>这篇就到这里，后续文章将对三个重要组件及其拓展做更详细的讲解</p>
 <p>–End–</p>
-</div></article></div></section><footer><div class="paginator"><a href="/2016/07/03/monitor-system2/" class="prev">上一篇</a><a href="/2016/06/25/open-falcon/" class="next">下一篇</a></div><div id="disqus_thread"></div><script>var disqus_shortname = '710leo';
+</div></article></div></section><footer><div class="paginator"><a href="/2016/07/03/monitor-system2/" class="prev">PREV</a><a href="/2016/06/25/open-falcon/" class="next">NEXT</a></div><div id="disqus_thread"></div><script>var disqus_shortname = '710leo';
 var disqus_identifier = '2016/06/28/monitor-system/';
 var disqus_title = '企业级监控系统设计实践（一）';
 var disqus_url = 'http://blog.x2know.org/2016/06/28/monitor-system/';
