@@ -14,7 +14,7 @@
 <h3 id="nodata容易误报"><a href="#nodata容易误报" class="headerlink" title="nodata容易误报"></a>nodata容易误报</h3><p>现在nodate的处理逻辑是这样的，falcon-agent每个周期，会上报一个aagent.alive=1的指标，nodata每个周期会从后端历史数据接口获取最近一个点agent.alive的数据，如果获取不到，则自动上报一个agent.alive=1，这里会有一个问题，如果agent上报有延迟，在nodata查询的时候，数据还没上去，nodata会上报一个agent.alive=0，而后上报的agent.alive=1则会被丢弃，造成误报。<br><strong>解决方案</strong>：<br>之前nodata的方案需要数据重新从transfer到judge再走一遍。数据链路太长，新的方案直接通过judge组件完成，由judge维护一个上报数据来源的hostname列表，由于judge的每个counter都会保留最近的10点，所以通过hostname+agent.alive能拿到最近的数据点，如果当前时间点减去最近的时间点大于3个周期的时间，则基本可以说明数据已经不再上报了，然后触发一次告警判别，这种方案能很好的解决误报问题。</p>
 <h3 id="用户的一些操作权限设置不合理"><a href="#用户的一些操作权限设置不合理" class="headerlink" title="用户的一些操作权限设置不合理"></a>用户的一些操作权限设置不合理</h3><p>用户配置的策略只有自己可以修改，screen所有人都可以修改，有同事离职了，想做修改，需要直接操作数据库，这样很不好。<br><strong>解决方案</strong>：<br>用户在web端的所有操作都和所在的team绑定，同一个team的人可以修改，查看team对应的资源。</p>
 <h3 id="没有告警升级"><a href="#没有告警升级" class="headerlink" title="没有告警升级"></a>没有告警升级</h3><p>告警触发后，如果没人响应，达到最大报警次数后，有被忽略的风险。如果告警触发后，经过一段时间没有恢复，继续发给另一批人，再次对相关人员进行提醒。<br><strong>解决方案</strong>：<br>这个还没想到很好的解决方案，欢迎讨论: )</p>
-</div></article></div></section><footer><div class="paginator"><a href="/2016/06/28/monitor-system/" class="prev">PREV</a><a href="/2015/09/21/ifttt-rss-evernote/" class="next">NEXT</a></div><div id="disqus_thread"></div><script>var disqus_shortname = '710leo';
+</div></article></div></section><footer><div class="paginator"><a href="/2016/06/28/monitor-system/" class="prev">上一篇</a><a href="/2015/09/21/ifttt-rss-evernote/" class="next">下一篇</a></div><div id="disqus_thread"></div><script>var disqus_shortname = '710leo';
 var disqus_identifier = '2016/06/25/open-falcon/';
 var disqus_title = '小米监控系统falcon优点和缺点';
 var disqus_url = 'http://blog.x2know.org/2016/06/25/open-falcon/';
