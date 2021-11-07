@@ -1,4 +1,398 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title> AsuraQin</title><meta name="description" content="A Blog Powered By Hexo"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="short icon" href="/favicon.png"><link rel="stylesheet" href="/css/apollo.css"><link rel="stylesheet" href="http://fonts.useso.com/css?family=Source+Sans+Pro:400,600" type="text/css"></head><body><div class="wrap"><header><a href="/" class="logo-link"><img src="/favicon.png"></a><ul class="nav nav-list"><li class="nav-list-item"><a href="/" target="_self" class="nav-list-link active">BLOG</a></li><li class="nav-list-item"><a href="/archives/" target="_self" class="nav-list-link">ARCHIVE</a></li><li class="nav-list-item"><a href="http://weibo.com/710x710" target="_blank" class="nav-list-link">WEIBO</a></li><li class="nav-list-item"><a href="https://github.com/710leo" target="_blank" class="nav-list-link">GITHUB</a></li><li class="nav-list-item"><a href="/atom.xml" target="_self" class="nav-list-link">RSS</a></li></ul></header><section class="container"><ul class="home post-list"><li class="post-list-item"><article class="post-block"><h2 class="post-title"><a href="/2014/02/27/zvuldrill/" class="post-title-link">Web漏洞演练平台 – ZVulDrill</a></h2><div class="post-info">Feb 27, 2014</div><div class="post-content"><p>在学习和研究web漏洞的过程中对每一种漏洞都进行了测试，将其整理到了一块儿，于是有了一个简单的Web漏洞演练平台–ZVulDrill，通过演练平台大家可以亲身实践如何利用这个漏洞，同时也可以学习到漏洞的相关知识。<br></div><a href="/2014/02/27/zvuldrill/" class="read-more">...more</a></article></li><li class="post-list-item"><article class="post-block"><h2 class="post-title"><a href="/2013/12/09/wen-jian-bian-li/" class="post-title-link">任意文件遍历漏洞科普</a></h2><div class="post-info">Dec 9, 2013</div><div class="post-content"><h4>1 简介</h4>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+	<meta name="generator" content="Hugo 0.89.1" />
 
-<p>文件遍历漏洞利用方法乍一看和文件包含差不多，其实有本质的差别，文件遍历的利用方法是通过路径直接访问资源， 当网站应用通过连接请求资源时，会根据实际完整路径查找资源，因此通过利用../等可以跨目录访问其他资源， 实例：<br></div><a href="/2013/12/09/wen-jian-bian-li/" class="read-more">...more</a></article></li><li class="post-list-item"><article class="post-block"><h2 class="post-title"><a href="/2013/11/08/wen-jian-bao-han/" class="post-title-link">文件包含科普</a></h2><div class="post-info">Nov 8, 2013</div><div class="post-content"><p><h4>1.形成原因</h4><br>使用动态文件包含且变量没有过滤</p>
-<p><h4>2.造成影响</h4><br>2.1暴露重要文件<br>2.2获取网站权限<br></div><a href="/2013/11/08/wen-jian-bao-han/" class="read-more">...more</a></article></li><li class="post-list-item"><article class="post-block"><h2 class="post-title"><a href="/2013/10/13/kai-fa-zi-xun-fa-bu-xi-tong-you-gan/" class="post-title-link">开发资讯发布系统有感</a></h2><div class="post-info">Oct 13, 2013</div><div class="post-content"><p>断断续续的终于把资讯发布系统完成了，当开发一个很大的应用时，先把其分成几个小的模块，然后在单独对其进行开发，这样会方便很多，就像刚开始开发这个发布系统的时候，几个模块差别挺大的，</div><a href="/2013/10/13/kai-fa-zi-xun-fa-bu-xi-tong-you-gan/" class="read-more">...more</a></article></li></ul></section><footer><div class="paginator"><a href="/" class="prev">PREV</a></div><div class="copyright"><p>© 2014 - 2016 <a href="http://blog.x2know.org">qinyening</a>, unless otherwise noted.</p></div></footer></div><script async src="//cdn.bootcss.com/mathjax/2.6.1/MathJax.js?config=TeX-MML-AM_CHTML"></script><script>(function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;e=o.createElement(i);r=o.getElementsByTagName(i)[0];e.src='//www.google-analytics.com/analytics.js';r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));ga('create',"UA-54783341-1",'auto');ga('send','pageview');</script></body></html>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>秦叶宁的网志 | IT技术、认知科学</title>
+    <meta property="og:title" content="秦叶宁的网志 | IT技术、认知科学">
+    <meta property="og:type" content="website">
+    <meta name="Keywords" content="golang,devops,monitor">
+    <meta name="description" content="专注于IT技术、认知科学等">
+    <meta property="og:url" content="http://www.qinyening.com/">
+    <link rel="shortcut icon" href='http://blog-1255977231.cos.ap-beijing.myqcloud.com/151300.jpg'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <link rel="alternate" type="application/rss+xml" href="http://www.qinyening.com/index.xml" title="秦叶宁的网志" />
+    <script type="text/javascript" src="//cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    
+    
+    
+    
+    
+        <link rel="stylesheet" href='/css/douban.css'>
+    
+        <link rel="stylesheet" href='/css/other.css'>
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <h1>
+                        <a id="logo" href="http://www.qinyening.com/">
+                            秦叶宁的网志
+                        </a>
+                    </h1>
+                
+                <p class="description">IT技术、认知科学</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="http://www.qinyening.com/">首页</a>
+                    
+                    <a  href="http://www.qinyening.com/archives/" title="归档">归档</a>
+                    
+                    <a  href="http://www.qinyening.com/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">
+                <a href="http://www.qinyening.com/post/2016-01-06-apps/" title="推荐一些实用的app-2016版">推荐一些实用的app-2016版</a>
+            </h1>
+        </header>
+        <date class="post-meta meta-date">
+            2016年1月6日
+        </date>
+        
+        <div class="post-content">
+            <p>智能手机已经改变了我们的生活，记录一下常用的比较好用的app</p>……
+        </div>
+        <p class="readmore"><a href="http://www.qinyening.com/post/2016-01-06-apps/">阅读全文</a></p>
+    </article>
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">
+                <a href="http://www.qinyening.com/post/2016-01-03-comunication/" title="有效沟通">有效沟通</a>
+            </h1>
+        </header>
+        <date class="post-meta meta-date">
+            2016年1月3日
+        </date>
+        
+        <div class="post-content">
+            <p>最近遇到的人和事，让我认识到了一个词的重要性，沟通，人和人之间要合作，就得沟通，还要是有效地沟通，那怎样有效的沟通呢？笔者最近就在思考这个问题，首先想到的是，在沟通时，要一个中心点，我们沟通是为了什么，然后一定要先理解对方要表达的意思，不要急于表达自己的意思，等明白对方的意思后，还要确保对方也明白了自己的意思，这样才能有效的沟通下去。</p>……
+        </div>
+        <p class="readmore"><a href="http://www.qinyening.com/post/2016-01-03-comunication/">阅读全文</a></p>
+    </article>
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">
+                <a href="http://www.qinyening.com/post/2015-09-21-ifttt-rss-evernote/" title="利用 IFTTT &#43; RSS &#43; Evernote 打造优质资料库">利用 IFTTT &#43; RSS &#43; Evernote 打造优质资料库</a>
+            </h1>
+        </header>
+        <date class="post-meta meta-date">
+            2015年9月21日
+        </date>
+        
+        <div class="post-content">
+            <p>如今信息浩瀚如海，怎样从中筛选优质信息并化为自己的呢，下面介绍三个利器，通过他们打造自己的优质资料库</p>
+<p>我们每天主要的信息来源有下面几大类                     <br>
+1.博客  <br>
+2.微信公众账号<br>
+3.微博<br>
+4.twitter</p>……
+        </div>
+        <p class="readmore"><a href="http://www.qinyening.com/post/2015-09-21-ifttt-rss-evernote/">阅读全文</a></p>
+    </article>
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">
+                <a href="http://www.qinyening.com/post/pragmatic-thinking-and-learning/" title="程序员的思维修炼 读书笔记">程序员的思维修炼 读书笔记</a>
+            </h1>
+        </header>
+        <date class="post-meta meta-date">
+            2015年8月17日
+        </date>
+        
+        <div class="post-meta">
+            <span>|</span>
+            
+            <span class="meta-category"><a href='/categories/%E8%AE%A4%E7%9F%A5%E7%A7%91%E5%AD%A6'>认知科学</a></span>
+            
+        </div>
+        
+        <div class="post-content">
+            <p>虽然这本书是名字叫“程序员的思维修炼”，但普通人也值得一看，书中对大脑的机制和认知偏见做了很好的讲解，这里简单记录下，主要是第三章到第五章的内容</p>
+<h3 id="关于大脑的机制">关于大脑的机制</h3>
+<p>我们两个半脑工作机制有很大不同，这个我们是知道的，但书中关于总线的隐喻比较新颖，大脑由两个cpu，一个总线，一个内存构成</p>……
+        </div>
+        <p class="readmore"><a href="http://www.qinyening.com/post/pragmatic-thinking-and-learning/">阅读全文</a></p>
+    </article>
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">
+                <a href="http://www.qinyening.com/post/zvuldrill/" title="Web漏洞演练平台 – ZVulDrill">Web漏洞演练平台 – ZVulDrill</a>
+            </h1>
+        </header>
+        <date class="post-meta meta-date">
+            2014年2月27日
+        </date>
+        
+        <div class="post-meta">
+            <span>|</span>
+            
+            <span class="meta-category"><a href='/categories/IT%E6%8A%80%E6%9C%AF'>IT技术</a></span>
+            
+        </div>
+        
+        <div class="post-content">
+            <p>在学习和研究web漏洞的过程中对每一种漏洞都进行了测试，将其整理到了一块儿，于是有了一个简单的Web漏洞演练平台–ZVulDrill，通过演练平台大家可以亲身实践如何利用这个漏洞，同时也可以学习到漏洞的相关知识。</p>……
+        </div>
+        <p class="readmore"><a href="http://www.qinyening.com/post/zvuldrill/">阅读全文</a></p>
+    </article>
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">
+                <a href="http://www.qinyening.com/post/wen-jian-bian-li/" title="任意文件遍历漏洞介绍">任意文件遍历漏洞介绍</a>
+            </h1>
+        </header>
+        <date class="post-meta meta-date">
+            2013年12月9日
+        </date>
+        
+        <div class="post-meta">
+            <span>|</span>
+            
+            <span class="meta-category"><a href='/categories/IT%E6%8A%80%E6%9C%AF'>IT技术</a></span>
+            
+        </div>
+        
+        <div class="post-content">
+            <h4 id="1-简介">1 简介</h4>
+<p>文件遍历漏洞利用方法乍一看和文件包含差不多，其实有本质的差别，文件遍历的利用方法是通过路径直接访问资源， 当网站应用通过连接请求资源时，会根据实际完整路径查找资源，因此通过利用../等可以跨目录访问其他资源， 实例：</p>……
+        </div>
+        <p class="readmore"><a href="http://www.qinyening.com/post/wen-jian-bian-li/">阅读全文</a></p>
+    </article>
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">
+                <a href="http://www.qinyening.com/post/wen-jian-bao-han/" title="文件包含漏洞介绍">文件包含漏洞介绍</a>
+            </h1>
+        </header>
+        <date class="post-meta meta-date">
+            2013年11月8日
+        </date>
+        
+        <div class="post-meta">
+            <span>|</span>
+            
+            <span class="meta-category"><a href='/categories/IT%E6%8A%80%E6%9C%AF'>IT技术</a></span>
+            
+        </div>
+        
+        <div class="post-content">
+            <h4 id="1形成原因">1.形成原因</h4>
+<p>使用动态文件包含且变量没有过滤</p>……
+        </div>
+        <p class="readmore"><a href="http://www.qinyening.com/post/wen-jian-bao-han/">阅读全文</a></p>
+    </article>
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">
+                <a href="http://www.qinyening.com/post/kai-fa-zi-xun-fa-bu-xi-tong-you-gan/" title="开发资讯发布系统有感">开发资讯发布系统有感</a>
+            </h1>
+        </header>
+        <date class="post-meta meta-date">
+            2013年10月13日
+        </date>
+        
+        <div class="post-content">
+            <p>断断续续的终于把资讯发布系统完成了，当开发一个很大的应用时，先把其分成几个小的模块，然后在单独对其进行开发，这样会方便很多，就像刚开始开发这个发布系统的时候，几个模块差别挺大的，</p>……
+        </div>
+        <p class="readmore"><a href="http://www.qinyening.com/post/kai-fa-zi-xun-fa-bu-xi-tong-you-gan/">阅读全文</a></p>
+    </article>
+    
+    
+
+
+
+<ol class="page-navigator">
+    
+    <li class="prev">
+        <a href="http://www.qinyening.com/">上一页</a>
+    </li>
+    
+
+    
+    <li >
+        <a href="http://www.qinyening.com/">1</a>
+    </li>
+    
+    <li  class="current">
+        <a href="http://www.qinyening.com/page/2/">2</a>
+    </li>
+    
+
+    
+</ol>
+
+
+
+</div>
+
+                    <footer id="footer">
+    <div class="container">
+      &copy; 2021 <a rel="nofollow" href="http://www.qinyening.com/">秦叶宁的网志</a>.
+        Powered by <a rel="nofollow noreferer noopener" href="https://gohugo.io">Hugo</a> &amp; <a rel="nofollow noreferer noopener" href="https://github.com/flysnow-org/maupassant-hugo">maupassant theme</a>.
+    </div>
+</footer>
+
+<script type="text/javascript" src="/js/app.js" defer></script>
+
+
+<script type="text/javascript" src="/js/douban.js" defer></script>
+<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' defer></script>
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='http://www.qinyening.com/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="http://www.qinyening.com/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2019-06-29-monitor01/" title="企业监控平台建设-需求分析篇">企业监控平台建设-需求分析篇</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2017-08-27-deep-work/" title="职业思考：深度工作">职业思考：深度工作</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-08-07-urlooker/" title="Urlooker：Web 可用性监控系统">Urlooker：Web 可用性监控系统</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-07-11-go-web-toruk/" title="Go Web开发脚手架 Toruk">Go Web开发脚手架 Toruk</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-07-07-monitor-system3/" title="企业级监控系统设计实践（三）数据转发">企业级监控系统设计实践（三）数据转发</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-07-03-monitor-system2/" title="企业级监控系统设计实践（二）数据采集">企业级监控系统设计实践（二）数据采集</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-06-28-monitor-system/" title="企业级监控系统设计实践（一）">企业级监控系统设计实践（一）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-06-25-open-falcon/" title="小米监控系统falcon优点和缺点">小米监控系统falcon优点和缺点</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-04-25-hari-seldon/" title="哈里·谢顿的一生">哈里·谢顿的一生</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-01-16-list/" title="生活小窍门-善用清单">生活小窍门-善用清单</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/categories/'>分类</a></h3>
+<ul class="widget-list">
+    
+    <li><a href="http://www.qinyening.com/categories/IT%E6%8A%80%E6%9C%AF/">IT技术 (3)</a></li>
+    
+    <li><a href="http://www.qinyening.com/categories/%E8%AE%A4%E7%9F%A5%E7%A7%91%E5%AD%A6/">认知科学 (1)</a></li>
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="http://www.qinyening.com/tags/%E5%AE%89%E5%85%A8/">安全</a>
+    
+    <a href="http://www.qinyening.com/tags/%E7%9B%91%E6%8E%A7/">监控</a>
+    
+    <a href="http://www.qinyening.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/">读书笔记</a>
+    
+    <a href="http://www.qinyening.com/tags/%E9%9A%8F%E6%83%B3/">随想</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.x2know.org" title="秦叶宁的网志">秦叶宁的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.yangzhiping.com/" title="阳志平的网志">阳志平的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.v2ex.com/go/create" title="V2EX">V2EX</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="http://www.qinyening.com/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

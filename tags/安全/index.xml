@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>安全 on 秦叶宁的网志</title>
+    <link>http://www.qinyening.com/tags/%E5%AE%89%E5%85%A8/</link>
+    <description>Recent content in 安全 on 秦叶宁的网志</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Thu, 27 Feb 2014 09:19:19 +0800</lastBuildDate><atom:link href="http://www.qinyening.com/tags/%E5%AE%89%E5%85%A8/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Web漏洞演练平台 – ZVulDrill</title>
+      <link>http://www.qinyening.com/post/zvuldrill/</link>
+      <pubDate>Thu, 27 Feb 2014 09:19:19 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/zvuldrill/</guid>
+      <description>&lt;p&gt;在学习和研究web漏洞的过程中对每一种漏洞都进行了测试，将其整理到了一块儿，于是有了一个简单的Web漏洞演练平台–ZVulDrill，通过演练平台大家可以亲身实践如何利用这个漏洞，同时也可以学习到漏洞的相关知识。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>任意文件遍历漏洞介绍</title>
+      <link>http://www.qinyening.com/post/wen-jian-bian-li/</link>
+      <pubDate>Mon, 09 Dec 2013 09:46:45 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/wen-jian-bian-li/</guid>
+      <description>&lt;h4 id=&#34;1-简介&#34;&gt;1 简介&lt;/h4&gt;
+&lt;p&gt;文件遍历漏洞利用方法乍一看和文件包含差不多，其实有本质的差别，文件遍历的利用方法是通过路径直接访问资源， 当网站应用通过连接请求资源时，会根据实际完整路径查找资源，因此通过利用../等可以跨目录访问其他资源， 实例：&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>文件包含漏洞介绍</title>
+      <link>http://www.qinyening.com/post/wen-jian-bao-han/</link>
+      <pubDate>Fri, 08 Nov 2013 22:59:35 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/wen-jian-bao-han/</guid>
+      <description>&lt;h4 id=&#34;1形成原因&#34;&gt;1.形成原因&lt;/h4&gt;
+&lt;p&gt;使用动态文件包含且变量没有过滤&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

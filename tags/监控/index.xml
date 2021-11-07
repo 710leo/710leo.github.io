@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>监控 on 秦叶宁的网志</title>
+    <link>http://www.qinyening.com/tags/%E7%9B%91%E6%8E%A7/</link>
+    <description>Recent content in 监控 on 秦叶宁的网志</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sat, 29 Jun 2019 19:02:56 +0800</lastBuildDate><atom:link href="http://www.qinyening.com/tags/%E7%9B%91%E6%8E%A7/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>企业监控平台建设-需求分析篇</title>
+      <link>http://www.qinyening.com/post/2019-06-29-monitor01/</link>
+      <pubDate>Sat, 29 Jun 2019 19:02:56 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/2019-06-29-monitor01/</guid>
+      <description>前言 工作以来一直在做监控平台相关的工作，最近计划写一系列文章总结下对企业监控平台建设的思考，本文是第一篇 需求分析 产品设计 架构设计 模块设计 运维 运营 下面开始正文 确定目标 在做任何事情的之前，我们要先思考做这件事情的意义和价值。企业为什么需要监控平台呢？公司的首要目标是创造利润，创造利润</description>
+    </item>
+    
+    <item>
+      <title>企业级监控系统设计实践（三）数据转发</title>
+      <link>http://www.qinyening.com/post/2016-07-07-monitor-system3/</link>
+      <pubDate>Thu, 07 Jul 2016 23:58:56 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/2016-07-07-monitor-system3/</guid>
+      <description>&lt;h2 id=&#34;插件&#34;&gt;插件&lt;/h2&gt;
+&lt;p&gt;上节讲了关于机器指标的采集，本节讲一下业务数据的采集，业务数据其实我们做的主要就是制定规范，告诉用户按照什么样的数据格式上报数据&lt;/p&gt;
+&lt;p&gt;根据经验，数据格式主要需要下面几个指标&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;metric 告诉监控系统数据项是什么&lt;/li&gt;
+&lt;li&gt;value 指标的数值&lt;/li&gt;
+&lt;li&gt;endpoint 上报数据的来源&lt;/li&gt;
+&lt;li&gt;tag 形式为a=b，通过tag可以匹配一批数据&lt;/li&gt;
+&lt;li&gt;timestamp 上报时间&lt;/li&gt;
+&lt;li&gt;step 上报间隔&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    
+    <item>
+      <title>企业级监控系统设计实践（二）数据采集</title>
+      <link>http://www.qinyening.com/post/2016-07-03-monitor-system2/</link>
+      <pubDate>Sun, 03 Jul 2016 23:54:43 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/2016-07-03-monitor-system2/</guid>
+      <description>&lt;h2 id=&#34;数据采集&#34;&gt;数据采集&lt;/h2&gt;
+&lt;p&gt;收到数据采集，那我们主要需要哪些数据呢？&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;机器的状态，cpu，内存&lt;/li&gt;
+&lt;li&gt;业务自己产生的数据，如qps等&lt;/li&gt;
+&lt;li&gt;mysql，redis等开源软件自身的状态数据&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;上面的数据大致可以分为两类：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;机器指标&lt;/li&gt;
+&lt;li&gt;业务数据&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;采集方式也有两种：push和pull
+当agent数量非常庞大时，如果采用pull的方式，server端需要保持大量的链接，非常消耗性能，所以我们采用agent push数据的方式&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>企业级监控系统设计实践（一）</title>
+      <link>http://www.qinyening.com/post/2016-06-28-monitor-system/</link>
+      <pubDate>Tue, 28 Jun 2016 16:20:36 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/2016-06-28-monitor-system/</guid>
+      <description>&lt;h2 id=&#34;背景&#34;&gt;背景&lt;/h2&gt;
+&lt;p&gt;从公司产品上线的那一天就开始需要运维，而监控则是运维中重要的一环，那我们想一下，为什么要监控呢，因为要保证线上服务出问题之后或者即将出问题时能立刻感知，此外有些数据我们想知道它的发展趋势。这其实已经道出了监控的最小功能点：
+&lt;strong&gt;收集信息，进行处理，发出提醒，数据展示&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id=&#34;阶段一&#34;&gt;阶段一：&lt;/h3&gt;
+&lt;p&gt;机器数量：n &amp;lt; 5
+假如公司的只有一款产品部署在一台机器，那我们只要写一个监控脚本，收集机器的信息和业务指标，再加一些判断，就完事了&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>小米监控系统falcon优点和缺点</title>
+      <link>http://www.qinyening.com/post/2016-06-25-open-falcon/</link>
+      <pubDate>Sat, 25 Jun 2016 21:40:23 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/2016-06-25-open-falcon/</guid>
+      <description>&lt;p&gt;参与开发和维护小米的falcon系统也有挺长时间了，总结一下falcon的一些优点和缺点。如果对falcon不了解，建议先对下这篇文章《&lt;a href=&#34;http://book.open-falcon.org/zh/intro/index.html&#34;&gt;open-falcon介绍&lt;/a&gt;》&lt;/p&gt;
+&lt;p&gt;先说下具备的优势：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;灵活的数据采集，支持自定义数据上报&lt;/li&gt;
+&lt;li&gt;支持策略模板、模板继承和覆盖&lt;/li&gt;
+&lt;li&gt;高效的告警判别，支持告警暂停、维护周期设置&lt;/li&gt;
+&lt;li&gt;组件支持水平拓展&lt;/li&gt;
+&lt;li&gt;大部分用golang编写，部署相对简单&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

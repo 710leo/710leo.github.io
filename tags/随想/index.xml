@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>随想 on 秦叶宁的网志</title>
+    <link>http://www.qinyening.com/tags/%E9%9A%8F%E6%83%B3/</link>
+    <description>Recent content in 随想 on 秦叶宁的网志</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sat, 16 Jan 2016 17:27:31 +0800</lastBuildDate><atom:link href="http://www.qinyening.com/tags/%E9%9A%8F%E6%83%B3/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>生活小窍门-善用清单</title>
+      <link>http://www.qinyening.com/post/2016-01-16-list/</link>
+      <pubDate>Sat, 16 Jan 2016 17:27:31 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/2016-01-16-list/</guid>
+      <description>有时候在做一件事情之前列一个清单，事情做起来会很节省时间，比如去超市之前，想好想买什么，然后列一个清单，这样会避免两个问题 到超市里只买清单上的东西，避免一些兴起，买一些用不到的东西 避免发生回来以后发现有的东西忘记买了 尤其是第二种情况，如果发现有东西忘买了，回到超市发现超市没有，必</description>
+    </item>
+    
+    <item>
+      <title>有效沟通</title>
+      <link>http://www.qinyening.com/post/2016-01-03-comunication/</link>
+      <pubDate>Sun, 03 Jan 2016 00:40:30 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/2016-01-03-comunication/</guid>
+      <description>&lt;p&gt;最近遇到的人和事，让我认识到了一个词的重要性，沟通，人和人之间要合作，就得沟通，还要是有效地沟通，那怎样有效的沟通呢？笔者最近就在思考这个问题，首先想到的是，在沟通时，要一个中心点，我们沟通是为了什么，然后一定要先理解对方要表达的意思，不要急于表达自己的意思，等明白对方的意思后，还要确保对方也明白了自己的意思，这样才能有效的沟通下去。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>开发资讯发布系统有感</title>
+      <link>http://www.qinyening.com/post/kai-fa-zi-xun-fa-bu-xi-tong-you-gan/</link>
+      <pubDate>Sun, 13 Oct 2013 11:54:15 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/kai-fa-zi-xun-fa-bu-xi-tong-you-gan/</guid>
+      <description>&lt;p&gt;断断续续的终于把资讯发布系统完成了，当开发一个很大的应用时，先把其分成几个小的模块，然后在单独对其进行开发，这样会方便很多，就像刚开始开发这个发布系统的时候，几个模块差别挺大的，&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>
