@@ -6,14 +6,23 @@
     <description>Recent content on 秦叶宁的网志</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <lastBuildDate>Sat, 29 Jun 2019 19:02:56 +0800</lastBuildDate><atom:link href="http://www.qinyening.com/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sat, 20 Nov 2021 00:47:34 +0800</lastBuildDate><atom:link href="http://www.qinyening.com/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>运维体系建设思考-稳定性篇</title>
+      <link>http://www.qinyening.com/post/2021-11-17-stability/</link>
+      <pubDate>Sat, 20 Nov 2021 00:47:34 +0800</pubDate>
+      
+      <guid>http://www.qinyening.com/post/2021-11-17-stability/</guid>
+      <description>前言 工作以来一直在做运维平台相关的研发工作，最近计划总结下对运维体系建设的思考，总结出一个通用模型，后续持续迭代，欢迎一起探讨交流。运维的工作主要有三个方向，稳定性、效率、成本，本篇是第一篇，稳定性篇。 下面开始正文 概述 运维工作的核心目标是保障线上业务可以稳定的运行，降低故障发生次</description>
+    </item>
+    
     <item>
       <title>关于</title>
       <link>http://www.qinyening.com/about/</link>
       <pubDate>Sun, 07 Nov 2021 14:00:54 +0800</pubDate>
       
       <guid>http://www.qinyening.com/about/</guid>
-      <description>作者简介 秦叶宁，滴滴专家工程师，致力于运维、监控、云原生、devops相关产品建设 企业级开源监控平台 Nightingale 主程，Urlooker 作者，现负责滴滴私有云运维产品方向的工作，如有运维体系、运维平台建设需求欢迎与我联系：） 作品集 Nightingale: 夜莺监控是一款企业级开源分布式监控平台 Urlooker: 一款web可用性监控</description>
+      <description>博主 秦叶宁 滴滴专家工程师，企业级开源监控平台 Nightingale 主程，擅长运维体系、运维监控平台建设，近期专注于可观测性、AIOps、云原生领域。 作品集 Nightingale: 夜莺监控是一款企业级开源分布式监控平台 Urlooker: 一款web可用性监控系统 ZVulDrill: Web漏洞演练平台 Toruk: golang web开发脚手架 Talk 从Open-Falcon到夜莺，我们做</description>
     </item>
     
     <item>
