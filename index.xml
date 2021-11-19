@@ -6,11 +6,11 @@
     <description>Recent content on 秦叶宁的网志</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <lastBuildDate>Sat, 20 Nov 2021 00:47:34 +0800</lastBuildDate><atom:link href="http://www.qinyening.com/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 17 Nov 2021 20:45:34 +0800</lastBuildDate><atom:link href="http://www.qinyening.com/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>运维体系建设思考-稳定性篇</title>
       <link>http://www.qinyening.com/post/2021-11-17-stability/</link>
-      <pubDate>Sat, 20 Nov 2021 00:47:34 +0800</pubDate>
+      <pubDate>Wed, 17 Nov 2021 20:45:34 +0800</pubDate>
       
       <guid>http://www.qinyening.com/post/2021-11-17-stability/</guid>
       <description>前言 工作以来一直在做运维平台相关的研发工作，最近计划总结下对运维体系建设的思考，总结出一个通用模型，后续持续迭代，欢迎一起探讨交流。运维的工作主要有三个方向，稳定性、效率、成本，本篇是第一篇，稳定性篇。 下面开始正文 概述 运维工作的核心目标是保障线上业务可以稳定的运行，降低故障发生次</description>
