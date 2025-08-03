@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>夜莺二次开发指南-监控系统（1） | 秦叶宁的网志</title>
+    <meta property="og:title" content="夜莺二次开发指南-监控系统（1） - 秦叶宁的网志">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2020-12-24T19:02:56&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2020-12-24T19:02:56&#43;08:00'>
+        
+    <meta name="Keywords" content="golang monitor aiops">
+    <meta name="description" content="夜莺二次开发指南-监控系统（1）">
+        
+    <meta name="author" content="秦叶宁">
+    <meta property="og:url" content="http://www.qinyening.com/post/2020-12-24-n9e-dev1/">
+    <link rel="shortcut icon" href='http://blog-1255977231.cos.ap-beijing.myqcloud.com/151300.jpg'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <script type="text/javascript" src="//cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    
+    
+    
+    
+    
+        <link rel="stylesheet" href='/css/douban.css'>
+    
+        <link rel="stylesheet" href='/css/other.css'>
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="http://www.qinyening.com/">
+                        秦叶宁的网志
+                    </a>
+                
+                <p class="description">专注于可观测性、AIOps</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="http://www.qinyening.com/">首页</a>
+                    
+                    <a  href="http://www.qinyening.com/archives/" title="归档">归档</a>
+                    
+                    <a  href="http://www.qinyening.com/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">夜莺二次开发指南-监控系统（1）</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2020年12月24日
+        </date>
+        
+        
+        
+        <div class="post-content">
+            <h2 id="前言">前言</h2>
+<p>本系列将对夜莺平台各个模块的主要逻辑代码进行介绍，方便大家进行二次开发，本篇是系列的第一篇，agent 和 transfer 模块代码解读。</p>
+<p>首先贴下夜莺的项目地址和架构图，正在使用夜莺的读者欢迎给夜莺加一个star：</p>
+<ul>
+<li><strong>GitHub 地址</strong>: <a href="https://github.com/didi/nightingale">https://github.com/didi/nightingale</a></li>
+<li><strong>v3.0 架构图</strong>:</li>
+</ul>
+<p>
+        <img class="mx-auto" alt="夜莺 v3.0 架构图" src="https://static001.geekbang.org/infoq/96/969efbac0df788f867e77b3fad6c3d1e.png" />   
+    </p>
+<p>本节主要讲解监控系统部分的源代码主逻辑，本篇主要讲解 <strong>agent</strong> 和 <strong>transfer</strong> 模块。</p>
+<h2 id="agent-模块解读">Agent 模块解读</h2>
+<h3 id="主要功能概述">主要功能概述</h3>
+<p>首先看一下 agent 的 main 函数，可以看出来 agent 负责了三个主要的工作：</p>
+<ol>
+<li><strong>监控指标的采集</strong></li>
+<li><strong>主机设备信息的收集</strong></li>
+<li><strong>任务命令的执行</strong></li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> config.Config.Enable.Mon {
+</span></span><span style="display:flex;"><span>        <span style="color:#900;font-weight:bold">monStart</span>()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> config.Config.Enable.Job {
+</span></span><span style="display:flex;"><span>        <span style="color:#900;font-weight:bold">jobStart</span>()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> config.Config.Enable.Report {
+</span></span><span style="display:flex;"><span>        <span style="color:#900;font-weight:bold">reportStart</span>()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>}
+</span></span></code></pre></div><p>因为本节只讲监控，所以只介绍监控指标的采集能力实现，也就是 <code>monStart()</code> 部分，其他的放到其他章节来介绍。</p>
+<p>从 <code>monStart()</code> 可以看出来，监控指标的采集主要分五部分：</p>
+<ul>
+<li><strong>系统指标采集</strong></li>
+<li><strong>端口采集</strong></li>
+<li><strong>进程采集</strong></li>
+<li><strong>插件采集</strong></li>
+<li><strong>日志采集</strong></li>
+</ul>
+<p>下面逐个对这五个采集的实现进行介绍：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">monStart</span>() {
+</span></span><span style="display:flex;"><span>    sys.<span style="color:#900;font-weight:bold">Init</span>(config.Config.Sys)
+</span></span><span style="display:flex;"><span>    stra.<span style="color:#900;font-weight:bold">Init</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// 系统指标采集
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    funcs.<span style="color:#900;font-weight:bold">BuildMappers</span>()
+</span></span><span style="display:flex;"><span>    funcs.<span style="color:#900;font-weight:bold">Collect</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// 插件采集
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    plugins.<span style="color:#900;font-weight:bold">Detect</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// 进程采集
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    procs.<span style="color:#900;font-weight:bold">Detect</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// 端口采集
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    ports.<span style="color:#900;font-weight:bold">Detect</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// 初始化缓存，用作保存 COUNTER 类型数据
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    cache.<span style="color:#900;font-weight:bold">Init</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// 日志采集
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#000;font-weight:bold">go</span> worker.<span style="color:#900;font-weight:bold">UpdateConfigsLoop</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">go</span> worker.<span style="color:#900;font-weight:bold">PusherStart</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">go</span> worker.<span style="color:#900;font-weight:bold">Zeroize</span>()
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="1-系统指标采集">1. 系统指标采集</h3>
+<p>首先看一下系统指标采集，如果想要增加系统指标采集项，可以从这里入手。</p>
+<p>每一个 <code>FuncsAndInterval</code> 对象，都包含了一组采集函数和采集周期，我们可以自己实现一个采集系统指标函数，然后赋值给 <code>FuncsAndInterval</code>，再加入到 <code>[]FuncsAndInterval{}</code> 中，<strong>即可扩充 agent 的基础指标采集能力</strong>。</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#000;font-weight:bold">type</span> FuncsAndInterval <span style="color:#000;font-weight:bold">struct</span> {
+</span></span><span style="display:flex;"><span>    Fs       []<span style="color:#000;font-weight:bold">func</span>() []<span style="color:#000;font-weight:bold">*</span>dataobj.MetricValue
+</span></span><span style="display:flex;"><span>    Interval <span style="color:#458;font-weight:bold">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="2-端口采集">2. 端口采集</h3>
+<p>夜莺 agent 要对机器上的那些端口进行探测采集是可以在 web 页面进行配置的，主要调度逻辑如下：</p>
+<p>一个 for 循环，定期获取服务的采集配置，然后和本地的策略进行对比，没有的增加，多余的删除。agent 对获取到的采集策略在内存了一个<strong>备份</strong>，服务端不能正常工作，导致采集任务无法进行。</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">Detect</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#900;font-weight:bold">detect</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">go</span> <span style="color:#900;font-weight:bold">loopDetect</span>()
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">loopDetect</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">for</span> {
+</span></span><span style="display:flex;"><span>        time.<span style="color:#900;font-weight:bold">Sleep</span>(time.Second <span style="color:#000;font-weight:bold">*</span> <span style="color:#099">10</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#900;font-weight:bold">detect</span>()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">detect</span>() {
+</span></span><span style="display:flex;"><span>    ps <span style="color:#000;font-weight:bold">:=</span> stra.<span style="color:#900;font-weight:bold">GetPortCollects</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#900;font-weight:bold">DelNoPortCollect</span>(ps)
+</span></span><span style="display:flex;"><span>    <span style="color:#900;font-weight:bold">AddNewPortCollect</span>(ps)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic">// 端口采集主逻辑
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span><span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">PortCollect</span>(p <span style="color:#000;font-weight:bold">*</span>models.PortCollect) {
+</span></span><span style="display:flex;"><span>    value <span style="color:#000;font-weight:bold">:=</span> <span style="color:#099">0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> <span style="color:#900;font-weight:bold">isListening</span>(p.Port) {
+</span></span><span style="display:flex;"><span>        value = <span style="color:#099">1</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    item <span style="color:#000;font-weight:bold">:=</span> core.<span style="color:#900;font-weight:bold">GaugeValue</span>(<span style="color:#d14">&#34;proc.port.listen&#34;</span>, value, p.Tags)
+</span></span><span style="display:flex;"><span>    item.Step = <span style="color:#0086b3">int64</span>(p.Step)
+</span></span><span style="display:flex;"><span>    item.Timestamp = time.<span style="color:#900;font-weight:bold">Now</span>().<span style="color:#900;font-weight:bold">Unix</span>()
+</span></span><span style="display:flex;"><span>    item.Endpoint = config.Endpoint
+</span></span><span style="display:flex;"><span>    core.<span style="color:#900;font-weight:bold">Push</span>([]<span style="color:#000;font-weight:bold">*</span>dataobj.MetricValue{item})
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="3-进程采集">3. 进程采集</h3>
+<p>进程采集的<a href="https://github.com/ccfos/nightingale/blob/v3/src/modules/agent/sys/procs/cron.go">调度逻辑</a>和端口采集类似，不在赘述。</p>
+<p>目前夜莺只采集了进程的个数、CPU、内存使用率，<strong>如果想增加进程的其他相关指标</strong>，可以修改下面的函数：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">ProcCollect</span>(p <span style="color:#000;font-weight:bold">*</span>models.ProcCollect) {
+</span></span><span style="display:flex;"><span>    ps, err <span style="color:#000;font-weight:bold">:=</span> process.<span style="color:#900;font-weight:bold">Processes</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">if</span> err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>        logger.<span style="color:#900;font-weight:bold">Error</span>(err)
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">var</span> memUsedTotal <span style="color:#458;font-weight:bold">uint64</span> = <span style="color:#099">0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">var</span> memUtilTotal = <span style="color:#099">0.0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">var</span> cpuUtilTotal = <span style="color:#099">0.0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">var</span> items []<span style="color:#000;font-weight:bold">*</span>dataobj.MetricValue
+</span></span><span style="display:flex;"><span>    cnt <span style="color:#000;font-weight:bold">:=</span> <span style="color:#099">0</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">for</span> _, procs <span style="color:#000;font-weight:bold">:=</span> <span style="color:#000;font-weight:bold">range</span> ps {
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">if</span> <span style="color:#900;font-weight:bold">isProc</span>(procs, p.CollectMethod, p.Target) {
+</span></span><span style="display:flex;"><span>            cnt<span style="color:#000;font-weight:bold">++</span>
+</span></span><span style="display:flex;"><span>            procCache, exists <span style="color:#000;font-weight:bold">:=</span> cache.ProcsCache.<span style="color:#900;font-weight:bold">Get</span>(procs.Pid)
+</span></span><span style="display:flex;"><span>            <span style="color:#000;font-weight:bold">if</span> !exists {
+</span></span><span style="display:flex;"><span>                cache.ProcsCache.<span style="color:#900;font-weight:bold">Set</span>(procs.Pid, procs)
+</span></span><span style="display:flex;"><span>                procCache = procs
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            mem, err <span style="color:#000;font-weight:bold">:=</span> procCache.<span style="color:#900;font-weight:bold">MemoryInfo</span>()
+</span></span><span style="display:flex;"><span>            <span style="color:#000;font-weight:bold">if</span> err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>                logger.<span style="color:#900;font-weight:bold">Error</span>(err)
+</span></span><span style="display:flex;"><span>                <span style="color:#000;font-weight:bold">continue</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            memUsedTotal <span style="color:#000;font-weight:bold">+=</span> mem.RSS
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            memUtil, err <span style="color:#000;font-weight:bold">:=</span> procCache.<span style="color:#900;font-weight:bold">MemoryPercent</span>()
+</span></span><span style="display:flex;"><span>            <span style="color:#000;font-weight:bold">if</span> err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>                logger.<span style="color:#900;font-weight:bold">Error</span>(err)
+</span></span><span style="display:flex;"><span>                <span style="color:#000;font-weight:bold">continue</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            memUtilTotal <span style="color:#000;font-weight:bold">+=</span> <span style="color:#0086b3">float64</span>(memUtil)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            cpuUtil, err <span style="color:#000;font-weight:bold">:=</span> procCache.<span style="color:#900;font-weight:bold">Percent</span>(<span style="color:#099">0</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#000;font-weight:bold">if</span> err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>                logger.<span style="color:#900;font-weight:bold">Error</span>(err)
+</span></span><span style="display:flex;"><span>                <span style="color:#000;font-weight:bold">continue</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            cpuUtilTotal <span style="color:#000;font-weight:bold">+=</span> cpuUtil
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>}
+</span></span></code></pre></div><h3 id="4-插件采集">4. 插件采集</h3>
+<p>插件采集的<a href="https://github.com/didi/nightingale/blob/68bccb4d3fc33cd1a24f17930413fae8bc89aca3/src/modules/agent/sys/plugins/reader.go#L17">调度逻辑</a>和端口采集也类似。</p>
+<p>目前夜莺的插件是需要提前部署到执行插件的目标机器上的，如果想实现插件自动分发的逻辑的话，可以修改 <a href="https://links.jianshu.com/go?to=https%3A%2F%2Fgithub.com%2Fdidi%2Fnightingale%2Fblob%2F68bccb4d3fc33cd1a24f17930413fae8bc89aca3%2Fsrc%2Fmodules%2Fagent%2Fsys%2Fplugins%2Freader.go%23L17">ListPlugins()</a> 的逻辑，从服务端提供一个下载插件的地址，然后 agent 从远端下载插件。</p>
+<p>下面代码块是执行插件的实现，目前插件支持在 web 端配置命令行参数、环境变量、和 stdin，这里可以做一个功能升级，如果待执行的插件是一个脚本程序的话，可以改造 monapi 模块和下面的逻辑，支持在页面上直接编写脚本，然后 agent 直接执行，可以不需要再进行插件下发：</p>
+<pre tabindex="0"><code>func PluginRun(plugin *Plugin) {
+    // ...
+    params := strings.Split(plugin.Params, &#34; &#34;)
+    cmd := exec.Command(fpath, params...)
+    cmd.Dir = filepath.Dir(fpath)
+    var stdout bytes.Buffer
+
+    cmd.Stdout = &amp;stdout
+    var stderr bytes.Buffer
+    cmd.Stderr = &amp;stderr
+
+    if plugin.Stdin != &#34;&#34; {
+        cmd.Stdin = bytes.NewReader([]byte(plugin.Stdin))
+    }
+
+    if plugin.Env != &#34;&#34; {
+        envs := make(map[string]string)
+        err := json.Unmarshal([]byte(plugin.Env), &amp;envs)
+        if err != nil {
+            logger.Errorf(&#34;plugin:%+v %v&#34;, plugin, err)
+            return
+        }
+        for k, v := range envs {
+            cmd.Env = append(cmd.Env, fmt.Sprintf(&#34;%s=%s&#34;, k, v))
+        }
+    }
+
+    err := cmd.Start()
+    // ...
+}
+</code></pre><h3 id="5-日志采集">5. 日志采集</h3>
+<p>日志采集的<a href="https://github.com/didi/nightingale/blob/68bccb4d3fc33cd1a24f17930413fae8bc89aca3/src/modules/agent/log/worker/control.go#L34">调度逻辑</a>和端口进程采集略有不同，因为代码是从滴滴开源的 <a href="https://github.com/didi/falcon-log-agent">falcon-log-agent</a> 中集成过来的。</p>
+<p>日志采集的实现思路是实时读取滚动的日志，使用正则表达式对日志进行匹配，然后把命中匹配的日志转换为时序数据，主要通过 worker 对象的 <a href="https://github.com/didi/nightingale/blob/68bccb4d3fc33cd1a24f17930413fae8bc89aca3/src/modules/agent/log/worker/worker.go#L201">producer</a> 方法来实现。</p>
+<p>目前日志采集还遗留一个优化项，将最后匹配到的日志，放到监控数据的 Extra 字段中，这样如果触发的告警事件，最后一条错误日志可以很方便的可以看到，加快问题的定位。</p>
+<h3 id="采集策略下发逻辑">采集策略下发逻辑</h3>
+<p>最后再补充下采集策略的下发逻辑，agent 要执行哪些采集策略，是从 monapi 获取的，用户在 web 界面添加了采集策略是和服务树节点相关的，并没有机器之间关联，所有 monapi 会对采集策略进行一次处理，根据服务树节点找到下面的机器，然后将采集策略和机器关联起来，放到一个 map 中，等待 agent 来获取。</p>
+<p>如果想知道某台机器被分配了哪些采集策略的话，可以通过下面接口查询到：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>curl http://monapi-ip/api/mon/collects/endpoint_ip
+</span></span></code></pre></div><p>如果想知道某台机器的 agent 实际获取了哪些采集策略的话，可以通过 agent 提供的 http 接口查询到：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>curl http://127.0.0.1:2080/api/collector/stra
+</span></span></code></pre></div><p>agent 处理采集监控指标之后，还可以接受监控数据的上报，提供了监控数据上报的 http 接口，agent 获取的监控数据之后，下一步是把数据上报给服务端，即是下面我们要讲解的 <strong>transfer</strong> 模块。</p>
+<h2 id="transfer-模块解读">Transfer 模块解读</h2>
+<h3 id="主要功能概述-1">主要功能概述</h3>
+<p>transfer 主要负责的工作有两个：</p>
+<ol>
+<li><strong>监控数据接收</strong></li>
+<li><strong>监控数据查询</strong></li>
+</ol>
+<h3 id="数据处理流程">数据处理流程</h3>
+<p>transfer 接收到监控数据之后，会对监控数据进行有效性校验，函数是 <a href="https://github.com/didi/nightingale/blob/68bccb4d3fc33cd1a24f17930413fae8bc89aca3/src/common/dataobj/metric.go#L65">CheckValidity()</a>。如果想对监控数据进行改造的话，可以通过修改 <code>CheckValidity()</code> 函数来完成。</p>
+<p>transfer 接收到数据之后，会把数据放到自己的内存队列中，然后由另一个任务实时的从队列消费数据再发给不同的后端：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#998;font-style:italic">// send to judge
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>backend.<span style="color:#900;font-weight:bold">Push2JudgeQueue</span>(items)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">if</span> aggr.AggrConfig.Enabled {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">go</span> aggr.<span style="color:#900;font-weight:bold">SendToAggr</span>(items)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic">// send to push endpoints
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>pushEndpoints, err <span style="color:#000;font-weight:bold">:=</span> backend.<span style="color:#900;font-weight:bold">GetPushEndpoints</span>()
+</span></span><span style="display:flex;"><span><span style="color:#000;font-weight:bold">if</span> err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>    logger.<span style="color:#900;font-weight:bold">Errorf</span>(<span style="color:#d14">&#34;could not find pushendpoint&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">return</span> err
+</span></span><span style="display:flex;"><span>} <span style="color:#000;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">for</span> _, pushendpoint <span style="color:#000;font-weight:bold">:=</span> <span style="color:#000;font-weight:bold">range</span> pushEndpoints {
+</span></span><span style="display:flex;"><span>        pushendpoint.<span style="color:#900;font-weight:bold">Push2Queue</span>(items)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic">// ...
+</span></span></span></code></pre></div><h3 id="数据分发机制">数据分发机制</h3>
+<p>夜莺的默认后端是 tsdb 模块，transfer 在将监控数据分发给 tsdb 的时候，使用了<a href="https://github.com/didi/nightingale/blob/68bccb4d3fc33cd1a24f17930413fae8bc89aca3/src/modules/transfer/backend/tsdb/tsdb.go#L103">一致性哈希</a>算法，保证了同一条曲线的监控数据，每次都可以转发到相同的后端，同时也负责了监控数据查询的工作，因为知道数据发给谁，所以也知道去哪里获取数据。</p>
+<h3 id="后端存储扩展">后端存储扩展</h3>
+<p>transfer 目前可以对接多种后端存储，如果已支持的存储不满足大家的需求的，可以根据定义好的 <code>DataSource</code> interface，开发支持自己的存储模块，只要实现以下方法即可：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#000;font-weight:bold">type</span> DataSource <span style="color:#000;font-weight:bold">interface</span> {
+</span></span><span style="display:flex;"><span>    PushEndpoint
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// query data for judge
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#900;font-weight:bold">QueryData</span>(inputs []dataobj.QueryData) []<span style="color:#000;font-weight:bold">*</span>dataobj.TsdbQueryResponse
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// query data for ui
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#900;font-weight:bold">QueryDataForUI</span>(input dataobj.QueryDataForUI) []<span style="color:#000;font-weight:bold">*</span>dataobj.TsdbQueryResponse
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// query metrics &amp; tags
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#900;font-weight:bold">QueryMetrics</span>(recv dataobj.EndpointsRecv) <span style="color:#000;font-weight:bold">*</span>dataobj.MetricResp
+</span></span><span style="display:flex;"><span>    <span style="color:#900;font-weight:bold">QueryTagPairs</span>(recv dataobj.EndpointMetricRecv) []dataobj.IndexTagkvResp
+</span></span><span style="display:flex;"><span>    <span style="color:#900;font-weight:bold">QueryIndexByClude</span>(recv []dataobj.CludeRecv) []dataobj.XcludeResp
+</span></span><span style="display:flex;"><span>    <span style="color:#900;font-weight:bold">QueryIndexByFullTags</span>(recv []dataobj.IndexByFullTagsRecv) []dataobj.IndexByFullTagsResp
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#998;font-style:italic">// tsdb instance
+</span></span></span><span style="display:flex;"><span><span style="color:#998;font-style:italic"></span>    <span style="color:#900;font-weight:bold">GetInstance</span>(metric, endpoint <span style="color:#458;font-weight:bold">string</span>, tags <span style="color:#000;font-weight:bold">map</span>[<span style="color:#458;font-weight:bold">string</span>]<span style="color:#458;font-weight:bold">string</span>) []<span style="color:#458;font-weight:bold">string</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="总结">总结</h2>
+<p>本篇讲解到此结束，下篇将为大家带来<strong>告警链路模块</strong>的代码解读。</p>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="http://www.qinyening.com/">秦叶宁</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="http://www.qinyening.com/post/2020-12-24-n9e-dev1/">http://www.qinyening.com/post/2020-12-24-n9e-dev1/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    
+</div>
+
+
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/%E7%9B%91%E6%8E%A7'>监控</a></li>
+                
+            </ul>
+            
+        </div>
+    </article>
+    
+    
+
+    
+    
+</div>
+
+                    <footer id="footer">
+    <div class="container">
+      &copy; 2025 <a rel="nofollow" href="http://www.qinyening.com/">秦叶宁的网志</a>.
+        Powered by <a rel="nofollow noreferer noopener" href="https://gohugo.io">Hugo</a> &amp; <a rel="nofollow noreferer noopener" href="https://github.com/flysnow-org/maupassant-hugo">maupassant theme</a>.
+    </div>
+</footer>
+
+<script type="text/javascript" src="/js/app.js" defer></script>
+
+
+<script type="text/javascript" src="/js/douban.js" defer></script>
+<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' defer></script>
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='http://www.qinyening.com/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="http://www.qinyening.com/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2021-11-17-stability/" title="运维体系建设思考-稳定性篇">运维体系建设思考-稳定性篇</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev6/" title="夜莺二次开发指南-任务执行中心">夜莺二次开发指南-任务执行中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev4/" title="夜莺二次开发指南-用户资源中心">夜莺二次开发指南-用户资源中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev5/" title="夜莺二次开发指南-资产设备管理">夜莺二次开发指南-资产设备管理</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev3/" title="夜莺二次开发指南-监控系统（3）">夜莺二次开发指南-监控系统（3）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev2/" title="夜莺二次开发指南-监控系统（2）">夜莺二次开发指南-监控系统（2）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev1/" title="夜莺二次开发指南-监控系统（1）">夜莺二次开发指南-监控系统（1）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2019-06-29-monitor01/" title="企业监控平台建设-需求分析篇">企业监控平台建设-需求分析篇</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2017-08-27-deep-work/" title="职业思考：深度工作">职业思考：深度工作</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-08-07-urlooker/" title="Urlooker：Web 可用性监控系统">Urlooker：Web 可用性监控系统</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/categories/'>分类</a></h3>
+<ul class="widget-list">
+    
+    <li><a href="http://www.qinyening.com/categories/IT%E6%8A%80%E6%9C%AF/">IT技术 (3)</a></li>
+    
+    <li><a href="http://www.qinyening.com/categories/%E8%AE%A4%E7%9F%A5%E7%A7%91%E5%AD%A6/">认知科学 (1)</a></li>
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="http://www.qinyening.com/tags/%E5%AE%89%E5%85%A8/">安全</a>
+    
+    <a href="http://www.qinyening.com/tags/%E7%9B%91%E6%8E%A7/">监控</a>
+    
+    <a href="http://www.qinyening.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/">读书笔记</a>
+    
+    <a href="http://www.qinyening.com/tags/%E9%9A%8F%E6%83%B3/">随想</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.x2know.org" title="秦叶宁的网志">秦叶宁的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.yangzhiping.com/" title="阳志平的网志">阳志平的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.v2ex.com/go/create" title="V2EX">V2EX</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="http://www.qinyening.com/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

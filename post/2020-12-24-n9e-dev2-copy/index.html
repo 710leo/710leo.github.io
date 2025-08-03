@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>夜莺二次开发指南-监控系统（2） | 秦叶宁的网志</title>
+    <meta property="og:title" content="夜莺二次开发指南-监控系统（2） - 秦叶宁的网志">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2020-12-30T19:02:56&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2020-12-30T19:02:56&#43;08:00'>
+        
+    <meta name="Keywords" content="golang monitor aiops">
+    <meta name="description" content="夜莺二次开发指南-监控系统（2）">
+        
+    <meta name="author" content="秦叶宁">
+    <meta property="og:url" content="http://localhost:1313/post/2020-12-24-n9e-dev2-copy/">
+    <link rel="shortcut icon" href='http://blog-1255977231.cos.ap-beijing.myqcloud.com/151300.jpg'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <script type="text/javascript" src="//cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    
+    
+    
+    
+    
+        <link rel="stylesheet" href='/css/douban.css'>
+    
+        <link rel="stylesheet" href='/css/other.css'>
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="http://localhost:1313/">
+                        秦叶宁的网志
+                    </a>
+                
+                <p class="description">专注于可观测性、AIOps</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="http://localhost:1313/">首页</a>
+                    
+                    <a  href="http://localhost:1313/archives/" title="归档">归档</a>
+                    
+                    <a  href="http://localhost:1313/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">夜莺二次开发指南-监控系统（2）</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2020年12月30日
+        </date>
+        
+        
+        
+        <div class="post-content">
+            <h3 id="前言">前言</h3>
+<p>本系列将对夜莺平台各个模块的主要逻辑代码进行介绍，方便大家进行二次开发，本篇是系列的第二篇，judge模块的解读。</p>
+<p>首先贴下夜莺的项目地址和架构图，正在使用夜莺的读者欢迎给夜莺加一个star</p>
+<ul>
+<li>github地址 <a href="https://links.jianshu.com/go?to=https%3A%2F%2Fgithub.com%2Fdidi%2Fnightingale">https://github.com/didi/nightingale</a></li>
+<li>v3.0架构图</li>
+</ul>
+<p>
+        <img class="mx-auto" alt="img" src="https://static001.geekbang.org/infoq/07/07e57a1fe5d59aad52712fa5b2f4bb87.png" />   
+    </p>
+<p>本篇主要讲解负责告警的judge模块，首先介绍下 transfer 到 judge 的数据流转</p>
+<h3 id="transfer-到-judge-数据流转">transfer 到 judge 数据流转</h3>
+<p>上文讲到的 transfer 模块，接收到数据之后，一份数据会转发给存储，另一份数据则会发给 judge，下面我们介绍下 transfer 到 judge 的数据流转</p>
+<p>因为不是所有的监控数据都会配置告警策略，所以为了降低无效数据的转发，transfer 在把数据发给 judge 的之前，会对数据进行一次过滤，那过滤依据是什么呢？当然就是告警策略了，只有配置了告警策略的监控数据才会转发给judge组件，所以 transfer 其实会定期从 monapi 模块获取全量的告警策略。</p>
+<p>拿到监控数据之后，因为 judge 是可以同时部署多个实例的，那 transfer 怎么判断把监控数据发送给哪个 judge 实例呢？这个工作其实由 monapi 和 transfer 配合一起来完成的。首先将一个 monapi 负责的工作</p>
+<p>monapi 也需要把用户配置的告警策略分配给不同的 judge 实例，那 monapi 如何对告警策略进行分发呢，这里有三点要注意</p>
+<ol>
+<li>每条策略只能发送到一个 judge 实例，不然会出现重复告警的问题</li>
+<li>每个 judge 实例得到的告警策略要尽可能的均匀</li>
+<li>judge 实例扩容或者缩容（宕机）之后，告警策略要重新分配，不然会有部分分策略不生效，或者策略分发不均衡</li>
+</ol>
+<p>为了满足上面3个要求，monapi 在给 judge 分发策略的时候，使用的是一致性hash 算法，并且每个 judge 实例都会定期上报自己的心跳，monapi 会定期的检查 judge 的心跳，一旦 judge 实例的状态发送变化，monapi 会重建 judge 的 hash环，对告警策略进行重新分配，<strong>通过这个机制 judge 具备了水平扩展和高可用部署的能力</strong></p>
+<p>transfer 拿到的告警策略，每个告警策略数据结构中有一个 <a href="https://github.com/didi/nightingale/blob/68bccb4d3fc33cd1a24f17930413fae8bc89aca3/src/models/mon_stra.go#L52">JudgeInstance</a> 字段，标记匹配到此条告警策略的数据要发给哪个 judge 时候，这样 transfer 不需要再管judge 实例的状态了，这个完成交给 monapi 来负责，monapi 下发告警数据发给哪个 judge 实例，transfer 就把相关的监控数据发给哪个 judge 实例。</p>
+<h3 id="judge模块">judge模块</h3>
+<p>首先看一下judge的main函数，对主要功能都加了注释说明</p>
+<pre tabindex="0"><code>func main() {
+  cfg := config.Config
+    identity.Parse()
+    loggeri.Init(cfg.Logger)
+    go stats.Init(&#34;n9e.judge&#34;)
+
+    query.Init(cfg.Query, &#34;rdb&#34;) //初始化查询数据的client
+    redi.Init(cfg.Redis) //初始化 redis 用来推送告警事件
+
+    cache.InitHistoryBigMap() //初始化bigMap，在内存中存放告警时用到的监控数据，数据会轮询更替，不会一直变大
+    cache.Strategy = cache.NewStrategyMap() // 存放从monapi获取的告警策略
+    cache.NodataStra = cache.NewStrategyMap() // 存放从monapi获取的nodata告警策略
+    cache.SeriesMap = cache.NewIndexMap() // 存放监控数据的索引，用来查询内存中的数据
+
+    go rpc.Start() //用来接收监控数据
+
+    go stra.GetStrategy(cfg.Strategy) //定期从monapi获取告警策略
+    go judge.NodataJudge(cfg.NodataConcurrency)
+    go report.Init(cfg.Report, &#34;rdb&#34;) //定期上报自己的心跳，让monapi知道自己是存活的
+
+
+    r := gin.New()
+    routes.Config(r)
+    go http.Start(r, &#34;judge&#34;, cfg.Logger.Level)
+
+    ending()
+}
+</code></pre><p>judge 接收到监控数据之后，再加上从 monapi 拿到的告警策略就可以进行告警规则计算了。下面是 judge 的主要流程，从流程图可以看出来，整个告警处理过程是一个简单的流式计算。</p>
+<p>
+        <img class="mx-auto" alt="img" src="https://static001.geekbang.org/infoq/6c/6c76184a0544bf16cbf5760d481d0d83.png" />   
+    </p>
+<p>judge 提供了一个 rpc 接口来接收监控数据，接收到监控数据之后，这里做了一个小的优化，judge 可以根据告警数据中携带的 sid 字段很快的获取到其对应的告警策略，sid 字段是在 transfer 模块加上去的，这样 judge 就不需要再根据metric + tag 来让告警数据和告警策略进行匹配，既可以提高匹配效率，也可以降低cpu消耗</p>
+<pre tabindex="0"><code>stra, exists := GetStra(val.Sid)
+if !exists {
+        stats.Counter.Set(&#34;point.miss&#34;, 1)
+        return
+}
+
+//...
+history, info, lastValue, status := Judge(stra, expr, historyData, val, now)
+statusArr = append(statusArr, status)
+
+if value == &#34;&#34; {
+    value = fmt.Sprintf(&#34;%s: %s&#34;, expr.Metric, lastValue)
+} else {
+    value += fmt.Sprintf(&#34;; %s: %s&#34;, expr.Metric, lastValue)
+}
+
+//...
+historyArr = append(historyArr, history)
+eventInfo += info
+
+sendEventIfNeed(statusArr, event, stra)
+</code></pre><p>judge函数中的 judgeItemWithStrategy() 会根据告警策略中配置的告警函数，调用对应的告警函数，来进行告警计算，如果想自己扩展告警函数，可以在通过在 src/modules/judge/judge/func.go 增加新的告警函数来实现。告警函数的接口如</p>
+<pre tabindex="0"><code>type Function interface {
+    Compute(vs []*dataobj.HistoryData) (leftValue dataobj.JsonFloat, isTriggered bool)
+}
+</code></pre><p>生成告警事件之后，sendEvent 负责将告警事件推送到 redis 中。</p>
+<pre tabindex="0"><code>func sendEvent(event *dataobj.Event) {
+    // update last event
+    cache.LastEvents.Set(event.ID, event)
+
+    err := redi.Push(event)
+    if err != nil {
+        stats.Counter.Set(&#34;redis.push.failed&#34;, 1)
+        logger.Errorf(&#34;push event:%v err:%v&#34;, event, err)
+    }
+}
+</code></pre><p>到此 judge 的整个工作就结束了，下篇将为大家带来数据存储模块的解读</p>
+<h3 id="作者简介">作者简介</h3>
+<p>秦叶宁 企业级开源运维平台 Nightingale 主程，Urlooker 作者，现负责滴滴私有云运维产品方向的工作，如有运维平台的搭建需求，欢迎与我联系：）</p>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="http://localhost:1313/">秦叶宁</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="http://localhost:1313/post/2020-12-24-n9e-dev2-copy/">http://localhost:1313/post/2020-12-24-n9e-dev2-copy/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    
+</div>
+
+
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/%E7%9B%91%E6%8E%A7'>监控</a></li>
+                
+            </ul>
+            
+        </div>
+    </article>
+    
+    
+
+    
+    
+</div>
+
+                    <footer id="footer">
+    <div class="container">
+      &copy; 2025 <a rel="nofollow" href="http://localhost:1313/">秦叶宁的网志</a>.
+        Powered by <a rel="nofollow noreferer noopener" href="https://gohugo.io">Hugo</a> &amp; <a rel="nofollow noreferer noopener" href="https://github.com/flysnow-org/maupassant-hugo">maupassant theme</a>.
+    </div>
+</footer>
+
+<script type="text/javascript" src="/js/app.js" defer></script>
+
+
+<script type="text/javascript" src="/js/douban.js" defer></script>
+<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' defer></script>
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='http://localhost:1313/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="http://localhost:1313/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="http://localhost:1313/post/2021-11-17-stability/" title="运维体系建设思考-稳定性篇">运维体系建设思考-稳定性篇</a>
+    </li>
+    
+    <li>
+        <a href="http://localhost:1313/post/2020-12-24-n9e-dev2-copy/" title="夜莺二次开发指南-监控系统（2）">夜莺二次开发指南-监控系统（2）</a>
+    </li>
+    
+    <li>
+        <a href="http://localhost:1313/post/2020-12-24-n9e-dev2/" title="夜莺二次开发指南-监控系统（2）">夜莺二次开发指南-监控系统（2）</a>
+    </li>
+    
+    <li>
+        <a href="http://localhost:1313/post/2020-12-24-n9e-dev1/" title="夜莺二次开发指南-监控系统（1）">夜莺二次开发指南-监控系统（1）</a>
+    </li>
+    
+    <li>
+        <a href="http://localhost:1313/post/2019-06-29-monitor01/" title="企业监控平台建设-需求分析篇">企业监控平台建设-需求分析篇</a>
+    </li>
+    
+    <li>
+        <a href="http://localhost:1313/post/2017-08-27-deep-work/" title="职业思考：深度工作">职业思考：深度工作</a>
+    </li>
+    
+    <li>
+        <a href="http://localhost:1313/post/2016-08-07-urlooker/" title="Urlooker：Web 可用性监控系统">Urlooker：Web 可用性监控系统</a>
+    </li>
+    
+    <li>
+        <a href="http://localhost:1313/post/2016-07-11-go-web-toruk/" title="Go Web开发脚手架 Toruk">Go Web开发脚手架 Toruk</a>
+    </li>
+    
+    <li>
+        <a href="http://localhost:1313/post/2016-07-07-monitor-system3/" title="企业级监控系统设计实践（三）数据转发">企业级监控系统设计实践（三）数据转发</a>
+    </li>
+    
+    <li>
+        <a href="http://localhost:1313/post/2016-07-03-monitor-system2/" title="企业级监控系统设计实践（二）数据采集">企业级监控系统设计实践（二）数据采集</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/categories/'>分类</a></h3>
+<ul class="widget-list">
+    
+    <li><a href="http://localhost:1313/categories/IT%E6%8A%80%E6%9C%AF/">IT技术 (3)</a></li>
+    
+    <li><a href="http://localhost:1313/categories/%E8%AE%A4%E7%9F%A5%E7%A7%91%E5%AD%A6/">认知科学 (1)</a></li>
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="http://localhost:1313/tags/%E5%AE%89%E5%85%A8/">安全</a>
+    
+    <a href="http://localhost:1313/tags/%E7%9B%91%E6%8E%A7/">监控</a>
+    
+    <a href="http://localhost:1313/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/">读书笔记</a>
+    
+    <a href="http://localhost:1313/tags/%E9%9A%8F%E6%83%B3/">随想</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.x2know.org" title="秦叶宁的网志">秦叶宁的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.yangzhiping.com/" title="阳志平的网志">阳志平的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.v2ex.com/go/create" title="V2EX">V2EX</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="http://localhost:1313/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

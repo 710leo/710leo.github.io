@@ -50,7 +50,7 @@
                         秦叶宁的网志
                     </a>
                 
-                <p class="description">专注于可观测性、AIOps、云原生、认知科学</p>
+                <p class="description">专注于可观测性、AIOps</p>
             </div>
             <div>
                 <nav id="nav-menu" class="clearfix">
@@ -95,8 +95,8 @@
             <h4 id="1-简介">1 简介</h4>
 <p>文件遍历漏洞利用方法乍一看和文件包含差不多，其实有本质的差别，文件遍历的利用方法是通过路径直接访问资源， 当网站应用通过连接请求资源时，会根据实际完整路径查找资源，因此通过利用../等可以跨目录访问其他资源， 实例：</p>
 <pre tabindex="0"><code>&lt;?php
-$img = $_GET['f'];
-echo '&lt;img src=&quot;images/'.$img.'&quot;&gt;'
+$img = $_GET[&#39;f&#39;];
+echo &#39;&lt;img src=&#34;images/&#39;.$img.&#39;&#34;&gt;&#39;
 ?&gt;
 </code></pre><p>访问a.com/openfile.php?f=a.jpg时,web应用会根据实际完整路径查找资源，如果a.jpg在/images 目录下，b.txt在 /config 下，则通过a.com/img?f=../config/b.txt 即可得到b.txt</p>
 <h4 id="2-利用所需条件">2 利用所需条件</h4>
@@ -115,8 +115,8 @@ URL编码： 点–%2e 斜线–%2f 反斜线–%5c
 例如：../../boot.ini%00.jpg，当获取文件名时.jpg被截断得到../../boot.ini</p>
 <p>下面两种技巧没有测试 <br>
 4.3 目录限定绕过: <br>
-在有些Web应用程序是通过限定目录权限来分离的。当然这样的方法不值得可取的，攻击者可以通过某些特殊的符号“~“来绕过。
-形如这样的提 交“downfile.jsp?filename=~/../boot”。能过这样一个符号，就可以直接跳转到硬盘目录下了。</p>
+在有些Web应用程序是通过限定目录权限来分离的。当然这样的方法不值得可取的，攻击者可以通过某些特殊的符号“<del>“来绕过。
+形如这样的提 交“downfile.jsp?filename=</del>/../boot”。能过这样一个符号，就可以直接跳转到硬盘目录下了。</p>
 <p>4.4绕过来路验证:  <br>
 在一些Web应用程序中，会有对提交参数的来路进行判断的方法，而绕过的方法可以尝试通过在网站留言或者交互的地方提交Url再点击或者直 接修改Http Referer即可，这主要是原因Http Referer是由客户端浏览器发送的，服务器是无法控制的，而将此变量当作一个值得信任源是错误的。</p>
 <p>参考： <br>
@@ -162,7 +162,7 @@ URL编码： 点–%2e 斜线–%2f 反斜线–%5c
 
                     <footer id="footer">
     <div class="container">
-      &copy; 2022 <a rel="nofollow" href="http://www.qinyening.com/">秦叶宁的网志</a>.
+      &copy; 2025 <a rel="nofollow" href="http://www.qinyening.com/">秦叶宁的网志</a>.
         Powered by <a rel="nofollow noreferer noopener" href="https://gohugo.io">Hugo</a> &amp; <a rel="nofollow noreferer noopener" href="https://github.com/flysnow-org/maupassant-hugo">maupassant theme</a>.
     </div>
 </footer>
@@ -193,6 +193,30 @@ URL编码： 点–%2e 斜线–%2f 反斜线–%5c
     </li>
     
     <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev6/" title="夜莺二次开发指南-任务执行中心">夜莺二次开发指南-任务执行中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev4/" title="夜莺二次开发指南-用户资源中心">夜莺二次开发指南-用户资源中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev5/" title="夜莺二次开发指南-资产设备管理">夜莺二次开发指南-资产设备管理</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev3/" title="夜莺二次开发指南-监控系统（3）">夜莺二次开发指南-监控系统（3）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev2/" title="夜莺二次开发指南-监控系统（2）">夜莺二次开发指南-监控系统（2）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev1/" title="夜莺二次开发指南-监控系统（1）">夜莺二次开发指南-监控系统（1）</a>
+    </li>
+    
+    <li>
         <a href="http://www.qinyening.com/post/2019-06-29-monitor01/" title="企业监控平台建设-需求分析篇">企业监控平台建设-需求分析篇</a>
     </li>
     
@@ -202,30 +226,6 @@ URL编码： 点–%2e 斜线–%2f 反斜线–%5c
     
     <li>
         <a href="http://www.qinyening.com/post/2016-08-07-urlooker/" title="Urlooker：Web 可用性监控系统">Urlooker：Web 可用性监控系统</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-07-11-go-web-toruk/" title="Go Web开发脚手架 Toruk">Go Web开发脚手架 Toruk</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-07-07-monitor-system3/" title="企业级监控系统设计实践（三）数据转发">企业级监控系统设计实践（三）数据转发</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-07-03-monitor-system2/" title="企业级监控系统设计实践（二）数据采集">企业级监控系统设计实践（二）数据采集</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-06-28-monitor-system/" title="企业级监控系统设计实践（一）">企业级监控系统设计实践（一）</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-06-25-open-falcon/" title="小米监控系统falcon优点和缺点">小米监控系统falcon优点和缺点</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-04-25-hari-seldon/" title="哈里·谢顿的一生">哈里·谢顿的一生</a>
     </li>
     
 </ul>
@@ -274,10 +274,6 @@ URL编码： 点–%2e 斜线–%2f 反斜线–%5c
         
         <li>
             <a target="_blank" href="https://www.v2ex.com/go/create" title="V2EX">V2EX</a>
-        </li>
-        
-        <li>
-            <a target="_blank" href="https://www.sunxidong.com/" title="安全圈朋友 孙希栋">安全圈朋友 孙希栋</a>
         </li>
         
     </ul>

@@ -50,7 +50,7 @@
                         秦叶宁的网志
                     </a>
                 
-                <p class="description">专注于可观测性、AIOps、云原生、认知科学</p>
+                <p class="description">专注于可观测性、AIOps</p>
             </div>
             <div>
                 <nav id="nav-menu" class="clearfix">
@@ -120,39 +120,20 @@
 代码如下
 <a href="http://pastebin.ubuntu.com/18247784/">http://pastebin.ubuntu.com/18247784/</a></p>
 <p>然后将得到的数据存到一个数组 procStatHistory 中，定期跟新数组中的cpu的状态值</p>
-<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
-<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
-</span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
-<pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">UpdateCpuStat</span>() <span style="color:#458;font-weight:bold">error</span> {
-        ps, err <span style="color:#000;font-weight:bold">:=</span> <span style="color:#900;font-weight:bold">CurrentProcStat</span>() 
-        <span style="color:#000;font-weight:bold">if</span> err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {
-            <span style="color:#000;font-weight:bold">return</span> err
-        }
-        psLock.<span style="color:#900;font-weight:bold">Lock</span>()
-        <span style="color:#000;font-weight:bold">defer</span> psLock.<span style="color:#900;font-weight:bold">Unlock</span>()
-        <span style="color:#000;font-weight:bold">for</span> i <span style="color:#000;font-weight:bold">:=</span> historyCount <span style="color:#000;font-weight:bold">-</span> <span style="color:#099">1</span>; i &gt; <span style="color:#099">0</span>; i<span style="color:#000;font-weight:bold">--</span> {
-            procStatHistory[i] = procStatHistory[i<span style="color:#000;font-weight:bold">-</span><span style="color:#099">1</span>]
-        }
-        procStatHistory[<span style="color:#099">0</span>] = ps
-        <span style="color:#000;font-weight:bold">return</span> <span style="color:#000;font-weight:bold">nil</span>
-    }
-</code></pre></td></tr></table>
-</div>
-</div><p>计算结果</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">UpdateCpuStat</span>() <span style="color:#458;font-weight:bold">error</span> {
+</span></span><span style="display:flex;"><span>        ps, err <span style="color:#000;font-weight:bold">:=</span> <span style="color:#900;font-weight:bold">CurrentProcStat</span>() 
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">if</span> err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#000;font-weight:bold">return</span> err
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        psLock.<span style="color:#900;font-weight:bold">Lock</span>()
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">defer</span> psLock.<span style="color:#900;font-weight:bold">Unlock</span>()
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">for</span> i <span style="color:#000;font-weight:bold">:=</span> historyCount <span style="color:#000;font-weight:bold">-</span> <span style="color:#099">1</span>; i &gt; <span style="color:#099">0</span>; i<span style="color:#000;font-weight:bold">--</span> {
+</span></span><span style="display:flex;"><span>            procStatHistory[i] = procStatHistory[i<span style="color:#000;font-weight:bold">-</span><span style="color:#099">1</span>]
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        procStatHistory[<span style="color:#099">0</span>] = ps
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">return</span> <span style="color:#000;font-weight:bold">nil</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>计算结果</p>
 <pre><code>cpuIdle := float64(procStatHistory[0].Cpu.Idle-procStatHistory[1].Cpu.Idle)*100.00/float64(procStatHistory[0].Cpu.Total - procStatHistory[1].Cpu.Total)
 </code></pre>
 <h4 id="内存">内存</h4>
@@ -306,7 +287,7 @@ linux下查看命令：top</li>
 
                     <footer id="footer">
     <div class="container">
-      &copy; 2022 <a rel="nofollow" href="http://www.qinyening.com/">秦叶宁的网志</a>.
+      &copy; 2025 <a rel="nofollow" href="http://www.qinyening.com/">秦叶宁的网志</a>.
         Powered by <a rel="nofollow noreferer noopener" href="https://gohugo.io">Hugo</a> &amp; <a rel="nofollow noreferer noopener" href="https://github.com/flysnow-org/maupassant-hugo">maupassant theme</a>.
     </div>
 </footer>
@@ -337,6 +318,30 @@ linux下查看命令：top</li>
     </li>
     
     <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev6/" title="夜莺二次开发指南-任务执行中心">夜莺二次开发指南-任务执行中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev4/" title="夜莺二次开发指南-用户资源中心">夜莺二次开发指南-用户资源中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev5/" title="夜莺二次开发指南-资产设备管理">夜莺二次开发指南-资产设备管理</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev3/" title="夜莺二次开发指南-监控系统（3）">夜莺二次开发指南-监控系统（3）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev2/" title="夜莺二次开发指南-监控系统（2）">夜莺二次开发指南-监控系统（2）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev1/" title="夜莺二次开发指南-监控系统（1）">夜莺二次开发指南-监控系统（1）</a>
+    </li>
+    
+    <li>
         <a href="http://www.qinyening.com/post/2019-06-29-monitor01/" title="企业监控平台建设-需求分析篇">企业监控平台建设-需求分析篇</a>
     </li>
     
@@ -346,30 +351,6 @@ linux下查看命令：top</li>
     
     <li>
         <a href="http://www.qinyening.com/post/2016-08-07-urlooker/" title="Urlooker：Web 可用性监控系统">Urlooker：Web 可用性监控系统</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-07-11-go-web-toruk/" title="Go Web开发脚手架 Toruk">Go Web开发脚手架 Toruk</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-07-07-monitor-system3/" title="企业级监控系统设计实践（三）数据转发">企业级监控系统设计实践（三）数据转发</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-07-03-monitor-system2/" title="企业级监控系统设计实践（二）数据采集">企业级监控系统设计实践（二）数据采集</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-06-28-monitor-system/" title="企业级监控系统设计实践（一）">企业级监控系统设计实践（一）</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-06-25-open-falcon/" title="小米监控系统falcon优点和缺点">小米监控系统falcon优点和缺点</a>
-    </li>
-    
-    <li>
-        <a href="http://www.qinyening.com/post/2016-04-25-hari-seldon/" title="哈里·谢顿的一生">哈里·谢顿的一生</a>
     </li>
     
 </ul>
@@ -418,10 +399,6 @@ linux下查看命令：top</li>
         
         <li>
             <a target="_blank" href="https://www.v2ex.com/go/create" title="V2EX">V2EX</a>
-        </li>
-        
-        <li>
-            <a target="_blank" href="https://www.sunxidong.com/" title="安全圈朋友 孙希栋">安全圈朋友 孙希栋</a>
         </li>
         
     </ul>
