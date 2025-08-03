@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>企业级监控系统设计实践（三）数据转发 | 秦叶宁的网志</title>
+    <meta property="og:title" content="企业级监控系统设计实践（三）数据转发 - 秦叶宁的网志">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2016-07-07T23:58:56&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2016-07-07T23:58:56&#43;08:00'>
+        
+    <meta name="Keywords" content="golang monitor aiops">
+    <meta name="description" content="企业级监控系统设计实践（三）数据转发">
+        
+    <meta name="author" content="秦叶宁">
+    <meta property="og:url" content="http://www.qinyening.com/post/2016-07-07-monitor-system3/">
+    <link rel="shortcut icon" href='http://blog-1255977231.cos.ap-beijing.myqcloud.com/151300.jpg'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <script type="text/javascript" src="//cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    
+    
+    
+    <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?62edf66253cb0df3cc6c28c802e8bf1f";
+      var s = document.getElementsByTagName("script")[0]; 
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+    
+    
+    
+    
+    
+    
+        <link rel="stylesheet" href='/css/douban.css'>
+    
+        <link rel="stylesheet" href='/css/other.css'>
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="http://www.qinyening.com/">
+                        秦叶宁的网志
+                    </a>
+                
+                <p class="description">专注于可观测性、AIOps</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="http://www.qinyening.com/">首页</a>
+                    
+                    <a  href="http://www.qinyening.com/archives/" title="归档">归档</a>
+                    
+                    <a  href="http://www.qinyening.com/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">企业级监控系统设计实践（三）数据转发</h1>
+        </header>
+        
+        <date class="post-meta meta-date">
+            2016年7月7日
+        </date>
+        
+        
+        
+        
+        <div class="post-content">
+            <h2 id="插件">插件</h2>
+<p>上节讲了关于机器指标的采集，本节讲一下业务数据的采集，业务数据其实我们做的主要就是制定规范，告诉用户按照什么样的数据格式上报数据</p>
+<p>根据经验，数据格式主要需要下面几个指标</p>
+<ul>
+<li>metric 告诉监控系统数据项是什么</li>
+<li>value 指标的数值</li>
+<li>endpoint 上报数据的来源</li>
+<li>tag 形式为a=b，通过tag可以匹配一批数据</li>
+<li>timestamp 上报时间</li>
+<li>step 上报间隔</li>
+</ul>
+<p>上节中提到了数据大致分为两类，其实还有一类比较特殊的情况。
+比如有个深度学习的部门，有100台机器，他们想要监控这些机器的GPU信息，这些信息不够通用，所以不能通过agent采集，但如果用户自己采集的话，将脚本部署到100台机器上又很麻烦，那怎么办呢？用户自己部署脚本麻烦，就让agent帮忙部署，具体流程如下：</p>
+<ol>
+<li>用户只要把自己写的脚本安装规范写好</li>
+<li>发布到指定的git上</li>
+<li>agent根据git地址将脚本全部拉取到本地</li>
+<li>用户在一个配置中心设置哪些机器执行哪些插件</li>
+<li>agent根据配置运行指定的插件</li>
+</ol>
+<p>到这里数据的采集已经完成了，下面开始思考怎么接收数据，然后用来告警判断和绘图。</p>
+<h2 id="数据转发">数据转发</h2>
+<p>如果负责告警判断和绘图的组件都是无状态的，那这些组件前面只要挂一个lvs，直接将数据推送上去即可。但如果组件是有状态的，那就要额外需要一个组件，来保证同一条信息每次都发送到相同的机器上去。</p>
+<p>这个转发数据的组件就先起名叫transfer，下面就主要讲一下transfer的功能需要和具体实现，
+功能需求：</p>
+<ul>
+<li>同一条数据每次都转发到同一个机器上</li>
+<li>数据要保证快速转发</li>
+</ul>
+<p>具体实现：</p>
+<p>要保证数据的一致性，最简单的是对上报的数据做hash，然后取余，但这样有一个问题，当后端的机器挂掉一台或者增加一台时，会有大量数据需要迁移，解决这个问题有两种方法：</p>
+<ul>
+<li>把每个数据上报的对应关系记录到一个路由表中，当后端机器个数发生变化时，原来的数据不进行迁移，新数据的分配重新记录到一个路由表中，旧数据慢慢往新数据迁移</li>
+<li>利用一致性hash算法，做到后端机器数变化时，只有少量数据进行迁移</li>
+</ul>
+<p>第一种方法可以保证数据没有丢失，但路由表的维护成本很高
+第二种方法虽然在数据迁移时会有少部分数据丢失，实现起来比第一种简单</p>
+<p>于是决定采用第二种方式，下面讲下具体代码实现goalng版
+首先需要一个hash环</p>
+<pre tabindex="0"><code>import &#34;stathat.com/c/consistent&#34;
+
+type ConsistentHashNodeRing struct {
+    ring *consistent.Consistent
+}
+func NewConsistentHashNodeRing(NumberOfReplicas int, nodes []string) *ConsistentHashNodeRing {
+    ret := &amp;ConsistentHashNodeRing{ring: consistent.New()}
+    ret.SetNumberOfReplicas(NumberOfReplicas)
+    ret.SetNodes(nodes)
+    return ret
+}
+//设置虚拟节点个数
+func (this *ConsistentHashNodeRing) SetNumberOfReplicas(num int) {
+    this.ring.NumberOfReplicas = num
+}
+
+//增加实际节点
+func (this *ConsistentHashNodeRing) SetNodes(nodes []string) {
+    for _, node := range nodes {
+        this.ring.Add(node)
+    }
+}   
+//拿到某个数据属于的节点
+func (this *ConsistentHashNodeRing) GetNode(pk string) (string, error) {
+    return this.ring.Get(pk)
+}
+</code></pre><p>通过NewConsistentHashNodeRing()这个函数，初始化一个一致性hash环，hash环的节点是一个后端机器地址相关的map中的key，通过GetNode()，拿到上报数据对应的节点，再得到要发送的后端地址。</p>
+<h4 id="使用队列">使用队列</h4>
+<p>如果拿到数据后即刻就就像后端转发，这样会有大量链接，每个链接只发送很少的数据，对网络资源造成浪费，怎么优化这个问题呢？我们可以针对每一个节点建立一个queue，然后定期从queue读取数据向后端转发，这样每个连接可以发送一批数据，提高对连接的利用率。</p>
+<h4 id="使用连接池">使用连接池</h4>
+<p>但当上报的数据非常大时，比如现在小米的监控系统每分钟要接受3000W条数据，虽然有了queue做缓冲，但transfer组件向后端发起的连接仍然非常多，此时为了提高效率，可以使用连接池。</p>
+<p>到这里，数据转发这个组件的开发思路已经讲完了，下面开始讲解告警判断和历史绘图</p>
+<h2 id="参考">参考：</h2>
+<ul>
+<li>
+<p><a href="https://github.com/open-falcon/transfer">open-falcon tranfer</a></p>
+</li>
+</ul>
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="http://www.qinyening.com/">秦叶宁</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="http://www.qinyening.com/post/2016-07-07-monitor-system3/">http://www.qinyening.com/post/2016-07-07-monitor-system3/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    
+</div>
+
+
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/%E7%9B%91%E6%8E%A7'>监控</a></li>
+                
+            </ul>
+            
+        </div>
+    </article>
+    
+    
+
+    
+    
+</div>
+
+                    <footer id="footer">
+    <div class="container">
+      &copy; 2025 <a rel="nofollow" href="http://www.qinyening.com/">秦叶宁的网志</a>.
+        Powered by <a rel="nofollow noreferer noopener" href="https://gohugo.io">Hugo</a> &amp; <a rel="nofollow noreferer noopener" href="https://github.com/flysnow-org/maupassant-hugo">maupassant theme</a>.
+    </div>
+</footer>
+
+<script type="text/javascript" src="/js/app.js" defer></script>
+
+
+<script type="text/javascript" src="/js/douban.js" defer></script>
+<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' defer></script>
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='http://www.qinyening.com/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="http://www.qinyening.com/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2021-11-17-stability/" title="运维体系建设思考-稳定性篇">运维体系建设思考-稳定性篇</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev6/" title="夜莺二次开发指南-任务执行中心">夜莺二次开发指南-任务执行中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev4/" title="夜莺二次开发指南-用户资源中心">夜莺二次开发指南-用户资源中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev5/" title="夜莺二次开发指南-资产设备管理">夜莺二次开发指南-资产设备管理</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev3/" title="夜莺二次开发指南-监控系统（3）">夜莺二次开发指南-监控系统（3）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev2/" title="夜莺二次开发指南-监控系统（2）">夜莺二次开发指南-监控系统（2）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev1/" title="夜莺二次开发指南-监控系统（1）">夜莺二次开发指南-监控系统（1）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2019-06-29-monitor01/" title="企业监控平台建设-需求分析篇">企业监控平台建设-需求分析篇</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2017-08-27-deep-work/" title="职业思考：深度工作">职业思考：深度工作</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-08-07-urlooker/" title="Urlooker：Web 可用性监控系统">Urlooker：Web 可用性监控系统</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/categories/'>分类</a></h3>
+<ul class="widget-list">
+    
+    <li><a href="http://www.qinyening.com/categories/IT%E6%8A%80%E6%9C%AF/">IT技术 (3)</a></li>
+    
+    <li><a href="http://www.qinyening.com/categories/%E8%AE%A4%E7%9F%A5%E7%A7%91%E5%AD%A6/">认知科学 (1)</a></li>
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="http://www.qinyening.com/tags/%E5%AE%89%E5%85%A8/">安全</a>
+    
+    <a href="http://www.qinyening.com/tags/%E7%9B%91%E6%8E%A7/">监控</a>
+    
+    <a href="http://www.qinyening.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/">读书笔记</a>
+    
+    <a href="http://www.qinyening.com/tags/%E9%9A%8F%E6%83%B3/">随想</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.x2know.org" title="秦叶宁的网志">秦叶宁的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.yangzhiping.com/" title="阳志平的网志">阳志平的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.v2ex.com/go/create" title="V2EX">V2EX</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="http://www.qinyening.com/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

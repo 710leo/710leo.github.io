@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>企业级监控系统设计实践（二）数据采集 | 秦叶宁的网志</title>
+    <meta property="og:title" content="企业级监控系统设计实践（二）数据采集 - 秦叶宁的网志">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2016-07-03T23:54:43&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2016-07-03T23:54:43&#43;08:00'>
+        
+    <meta name="Keywords" content="golang monitor aiops">
+    <meta name="description" content="企业级监控系统设计实践（二）数据采集">
+        
+    <meta name="author" content="秦叶宁">
+    <meta property="og:url" content="http://www.qinyening.com/post/2016-07-03-monitor-system2/">
+    <link rel="shortcut icon" href='http://blog-1255977231.cos.ap-beijing.myqcloud.com/151300.jpg'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <script type="text/javascript" src="//cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    
+    
+    
+    <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?62edf66253cb0df3cc6c28c802e8bf1f";
+      var s = document.getElementsByTagName("script")[0]; 
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+    
+    
+    
+    
+    
+    
+        <link rel="stylesheet" href='/css/douban.css'>
+    
+        <link rel="stylesheet" href='/css/other.css'>
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="http://www.qinyening.com/">
+                        秦叶宁的网志
+                    </a>
+                
+                <p class="description">专注于可观测性、AIOps</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="http://www.qinyening.com/">首页</a>
+                    
+                    <a  href="http://www.qinyening.com/archives/" title="归档">归档</a>
+                    
+                    <a  href="http://www.qinyening.com/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">企业级监控系统设计实践（二）数据采集</h1>
+        </header>
+        
+        <date class="post-meta meta-date">
+            2016年7月3日
+        </date>
+        
+        
+        
+        
+        <div class="post-content">
+            <h2 id="数据采集">数据采集</h2>
+<p>收到数据采集，那我们主要需要哪些数据呢？</p>
+<ul>
+<li>机器的状态，cpu，内存</li>
+<li>业务自己产生的数据，如qps等</li>
+<li>mysql，redis等开源软件自身的状态数据</li>
+</ul>
+<p>上面的数据大致可以分为两类：</p>
+<ul>
+<li>机器指标</li>
+<li>业务数据</li>
+</ul>
+<p>采集方式也有两种：push和pull
+当agent数量非常庞大时，如果采用pull的方式，server端需要保持大量的链接，非常消耗性能，所以我们采用agent push数据的方式</p>
+<p><strong>首先总结下机器指标的采集</strong></p>
+<h4 id="cpu">cpu</h4>
+<ul>
+<li>cpu.busy</li>
+<li>cpu.cnt</li>
+<li>cpu.guest</li>
+<li>cpu.idle</li>
+<li>cpu.iowait</li>
+<li>cpu.irq</li>
+<li>cpu.nice</li>
+<li>cpu.softirq</li>
+<li>cpu.steal</li>
+<li>cpu.system</li>
+<li>cpu.user</li>
+</ul>
+<p>如何计算cpu利用率呢？
+计算原理如下：<a href="http://blog.csdn.net/rheostat/article/details/8167479">传送门</a></p>
+<p>首先得到每个cpu的状态，封装成一个函数CurrentProcStat()
+代码如下
+<a href="http://pastebin.ubuntu.com/18247784/">http://pastebin.ubuntu.com/18247784/</a></p>
+<p>然后将得到的数据存到一个数组 procStatHistory 中，定期跟新数组中的cpu的状态值</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>    <span style="color:#000;font-weight:bold">func</span> <span style="color:#900;font-weight:bold">UpdateCpuStat</span>() <span style="color:#458;font-weight:bold">error</span> {
+</span></span><span style="display:flex;"><span>        ps, err <span style="color:#000;font-weight:bold">:=</span> <span style="color:#900;font-weight:bold">CurrentProcStat</span>() 
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">if</span> err <span style="color:#000;font-weight:bold">!=</span> <span style="color:#000;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#000;font-weight:bold">return</span> err
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        psLock.<span style="color:#900;font-weight:bold">Lock</span>()
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">defer</span> psLock.<span style="color:#900;font-weight:bold">Unlock</span>()
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">for</span> i <span style="color:#000;font-weight:bold">:=</span> historyCount <span style="color:#000;font-weight:bold">-</span> <span style="color:#099">1</span>; i &gt; <span style="color:#099">0</span>; i<span style="color:#000;font-weight:bold">--</span> {
+</span></span><span style="display:flex;"><span>            procStatHistory[i] = procStatHistory[i<span style="color:#000;font-weight:bold">-</span><span style="color:#099">1</span>]
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        procStatHistory[<span style="color:#099">0</span>] = ps
+</span></span><span style="display:flex;"><span>        <span style="color:#000;font-weight:bold">return</span> <span style="color:#000;font-weight:bold">nil</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>计算结果</p>
+<pre><code>cpuIdle := float64(procStatHistory[0].Cpu.Idle-procStatHistory[1].Cpu.Idle)*100.00/float64(procStatHistory[0].Cpu.Total - procStatHistory[1].Cpu.Total)
+</code></pre>
+<h4 id="内存">内存</h4>
+<p>一般内存监控一下几个指标即可</p>
+<ul>
+<li>memfree</li>
+<li>memtotal</li>
+<li>memused</li>
+<li>swapfree</li>
+<li>swaptotal</li>
+<li>swapused</li>
+</ul>
+<p>这些指标的数据可以从/proc/meminfo中获取,linux下输入 cat /proc/meminfo 得到以下信息
+几个主要指标的说明</p>
+<pre tabindex="0"><code>MemTotal — 总的内存大小，单位kb
+MemFree    — 空闲的内存大小，单位kb
+SwapTotal — 总swap大小，单位kb
+SwapFree — 空闲wsap大小，单位kb
+</code></pre><p>获取内存的具体代码实现 <a href="http://pastebin.ubuntu.com/16199860/">http://pastebin.ubuntu.com/16199860/</a></p>
+<h4 id="磁盘相关采集项">磁盘相关采集项</h4>
+<ul>
+<li>df.bytes.free</li>
+<li>df.bytes.total</li>
+<li>df.bytes.used</li>
+<li>df.inodes.free</li>
+<li>df.inodes.total</li>
+<li>df.inodes.used</li>
+</ul>
+<p>linux下查看命令：df -lh(/ih)
+采集方法：
+读取/proc/mounts拿到所有挂载点
+具体代码：http://pastebin.ubuntu.com/16201041</p>
+<p>通过golang <a href="https://golang.org/pkg/syscall/">syscall</a>包中的 Statfs函数得到磁盘blocks和inode的使用情况。
+具体代码如下：http://pastebin.ubuntu.com/18287842</p>
+<h4 id="磁盘io采集项">磁盘io采集项</h4>
+<ul>
+<li>disk.io.avgqu-sz  平均每次设备I/O操作的数据大小</li>
+<li>disk.io.avgrq-sz  平均I/O队列长度</li>
+<li>disk.io.await  平均每次设备I/O操作的等待时间</li>
+<li>disk.io.ios_in_progress</li>
+<li>disk.io.msec_read  读消耗时间</li>
+<li>disk.io.msec_write 写消耗时间</li>
+<li>disk.io.msec_total io总消耗时间</li>
+<li>disk.io.msec_weighted_total  加权io总消耗时间</li>
+<li>disk.io.read_bytes</li>
+<li>disk.io.read_merged</li>
+<li>disk.io.read_requests</li>
+<li>disk.io.read_sectors</li>
+<li>disk.io.write_bytes</li>
+<li>disk.io.write_merged</li>
+<li>disk.io.write_requests</li>
+<li>disk.io.write_sectors</li>
+<li>disk.io.svctm  平均每次io消耗时间</li>
+<li>disk.io.util 单位时间内（1s）读写占用时间比例</li>
+</ul>
+<p>linux下查看命令：<a href="http://linux.die.net/man/1/iostat">iostat</a></p>
+<h4 id="机器负载采集项">机器负载采集项</h4>
+<ul>
+<li>load.1min</li>
+<li>load.5min</li>
+<li>load.15min
+采集方法：直接读取/proc/loadavg<br>
+linux下查看命令：top</li>
+</ul>
+<h4 id="网络相关采集项">网络相关采集项</h4>
+<ul>
+<li>net.if.in.compressed</li>
+<li>net.if.in.dropped</li>
+<li>net.if.in.errors</li>
+<li>net.if.in.fifo.errs</li>
+<li>net.if.in.frame.errs</li>
+<li>net.if.in.multicast</li>
+<li>net.if.in.packets</li>
+<li>net.if.out.bytes</li>
+<li>net.if.out.carrier.errs</li>
+<li>net.if.out.collisions</li>
+<li>net.if.out.compressed</li>
+<li>net.if.out.dropped</li>
+<li>net.if.out.errors</li>
+<li>net.if.out.fifo.errs</li>
+<li>net.if.out.packets</li>
+<li>net.if.total.bytes</li>
+<li>net.if.total.dropped</li>
+<li>net.if.total.errors</li>
+<li>net.if.total.packets</li>
+</ul>
+<p>采集方法，读取/proc/net/dev的内容
+具体实现代码：http://pastebin.ubuntu.com/18293996/</p>
+<h4 id="端口信息采集">端口信息采集</h4>
+<p>linux 查看开放端口命令：ss -tln
+采集方法：利用golang 调用系统命令的方式获取开放的端口</p>
+<h4 id="进程状态采集">进程状态采集</h4>
+<p>由于系统运行的进程非常多，所以这类采集需要用户配置
+采集方法：读取 /proc/pid/status 下的内容</p>
+<h2 id="总结">总结</h2>
+<p>机器相关的采集项基本就是这些了，接下来将思考怎样接收业务数据，以及对数据的转发处理</p>
+<hr>
+<h2 id="参考">参考：</h2>
+<ul>
+<li><a href="https://www.zabbix.com/documentation/3.2/manual/config/items/itemtypes/zabbix_agent">zabbix agent</a></li>
+<li><a href="https://github.com/open-falcon/book/blob/master/zh/faq/linux-metrics.md">Linux运维基础采集项</a></li>
+<li><a href="http://www.penglixun.com/tech/system/how_to_calc_load_cpu.html">cpu idle计算原理</a></li>
+<li><a href="http://melody-dc.com/2015/11/21/%E7%90%86%E8%A7%A3CPU-steal-time/">理解CPU-steal-time</a></li>
+<li><a href="http://wendal.net/2012/1224.html">在Golang中获取系统的磁盘空间内存占用</a></li>
+<li><a href="http://547502462.blog.163.com/blog/static/633048222012834230731/">iostat 各项指标含义</a></li>
+<li><a href="https://www.pythian.com/blog/basic-io-monitoring-on-linux">Basic I/O Monitoring on Linux</a></li>
+</ul>
+<h2 id="回顾">回顾：</h2>
+<ul>
+<li>
+<p><a href="http://blog.x2know.org/2016/06/28/monitor-system/">企业级监控系统设计实践（一）</a></p>
+</li>
+</ul>
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="http://www.qinyening.com/">秦叶宁</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="http://www.qinyening.com/post/2016-07-03-monitor-system2/">http://www.qinyening.com/post/2016-07-03-monitor-system2/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    
+</div>
+
+
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/%E7%9B%91%E6%8E%A7'>监控</a></li>
+                
+            </ul>
+            
+        </div>
+    </article>
+    
+    
+
+    
+    
+</div>
+
+                    <footer id="footer">
+    <div class="container">
+      &copy; 2025 <a rel="nofollow" href="http://www.qinyening.com/">秦叶宁的网志</a>.
+        Powered by <a rel="nofollow noreferer noopener" href="https://gohugo.io">Hugo</a> &amp; <a rel="nofollow noreferer noopener" href="https://github.com/flysnow-org/maupassant-hugo">maupassant theme</a>.
+    </div>
+</footer>
+
+<script type="text/javascript" src="/js/app.js" defer></script>
+
+
+<script type="text/javascript" src="/js/douban.js" defer></script>
+<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' defer></script>
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='http://www.qinyening.com/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="http://www.qinyening.com/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2021-11-17-stability/" title="运维体系建设思考-稳定性篇">运维体系建设思考-稳定性篇</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev6/" title="夜莺二次开发指南-任务执行中心">夜莺二次开发指南-任务执行中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev4/" title="夜莺二次开发指南-用户资源中心">夜莺二次开发指南-用户资源中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev5/" title="夜莺二次开发指南-资产设备管理">夜莺二次开发指南-资产设备管理</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev3/" title="夜莺二次开发指南-监控系统（3）">夜莺二次开发指南-监控系统（3）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev2/" title="夜莺二次开发指南-监控系统（2）">夜莺二次开发指南-监控系统（2）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev1/" title="夜莺二次开发指南-监控系统（1）">夜莺二次开发指南-监控系统（1）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2019-06-29-monitor01/" title="企业监控平台建设-需求分析篇">企业监控平台建设-需求分析篇</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2017-08-27-deep-work/" title="职业思考：深度工作">职业思考：深度工作</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-08-07-urlooker/" title="Urlooker：Web 可用性监控系统">Urlooker：Web 可用性监控系统</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/categories/'>分类</a></h3>
+<ul class="widget-list">
+    
+    <li><a href="http://www.qinyening.com/categories/IT%E6%8A%80%E6%9C%AF/">IT技术 (3)</a></li>
+    
+    <li><a href="http://www.qinyening.com/categories/%E8%AE%A4%E7%9F%A5%E7%A7%91%E5%AD%A6/">认知科学 (1)</a></li>
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="http://www.qinyening.com/tags/%E5%AE%89%E5%85%A8/">安全</a>
+    
+    <a href="http://www.qinyening.com/tags/%E7%9B%91%E6%8E%A7/">监控</a>
+    
+    <a href="http://www.qinyening.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/">读书笔记</a>
+    
+    <a href="http://www.qinyening.com/tags/%E9%9A%8F%E6%83%B3/">随想</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.x2know.org" title="秦叶宁的网志">秦叶宁的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.yangzhiping.com/" title="阳志平的网志">阳志平的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.v2ex.com/go/create" title="V2EX">V2EX</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="http://www.qinyening.com/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

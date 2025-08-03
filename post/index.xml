@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on 秦叶宁的网志</title>
+    <link>http://www.qinyening.com/post/</link>
+    <description>Recent content in Posts on 秦叶宁的网志</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Wed, 17 Nov 2021 20:45:34 +0800</lastBuildDate>
+    <atom:link href="http://www.qinyening.com/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>运维体系建设思考-稳定性篇</title>
+      <link>http://www.qinyening.com/post/2021-11-17-stability/</link>
+      <pubDate>Wed, 17 Nov 2021 20:45:34 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2021-11-17-stability/</guid>
+      <description>&lt;h2 id=&#34;前言&#34;&gt;前言&lt;/h2&gt;&#xA;&lt;p&gt;工作以来一直在做运维平台相关的研发工作，最近计划总结下对运维体系建设的思考，总结出一个通用模型，后续持续迭代，欢迎一起探讨交流。运维的工作主要有三个方向，稳定性、效率、成本，本篇是第一篇，稳定性篇。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>夜莺二次开发指南-任务执行中心</title>
+      <link>http://www.qinyening.com/post/2020-12-24-n9e-dev6/</link>
+      <pubDate>Wed, 13 Jan 2021 19:00:56 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2020-12-24-n9e-dev6/</guid>
+      <description>&lt;h3 id=&#34;前言&#34;&gt;前言&lt;/h3&gt;&#xA;&lt;p&gt;本系列将对夜莺平台各个模块的主要逻辑进行介绍，方便大家进行二次开发，本篇是系列的第六篇，任务执行中心 (JOB) 模块&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>夜莺二次开发指南-用户资源中心</title>
+      <link>http://www.qinyening.com/post/2020-12-24-n9e-dev4/</link>
+      <pubDate>Wed, 13 Jan 2021 19:00:56 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2020-12-24-n9e-dev4/</guid>
+      <description>&lt;h3 id=&#34;前言&#34;&gt;前言&lt;/h3&gt;&#xA;&lt;p&gt;本系列将对夜莺平台各个模块的主要逻辑进行介绍，方便大家进行二次开发，本篇是系列的第四篇，用户资源中心模块&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>夜莺二次开发指南-资产设备管理</title>
+      <link>http://www.qinyening.com/post/2020-12-24-n9e-dev5/</link>
+      <pubDate>Wed, 13 Jan 2021 19:00:56 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2020-12-24-n9e-dev5/</guid>
+      <description>&lt;h3 id=&#34;前言&#34;&gt;前言&lt;/h3&gt;&#xA;&lt;p&gt;本系列将对夜莺平台各个模块的主要逻辑进行介绍，方便大家进行二次开发，本篇是系列的第四篇，资产设备管理 (AMS) 模块&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>夜莺二次开发指南-监控系统（3）</title>
+      <link>http://www.qinyening.com/post/2020-12-24-n9e-dev3/</link>
+      <pubDate>Tue, 12 Jan 2021 19:00:56 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2020-12-24-n9e-dev3/</guid>
+      <description>&lt;h3 id=&#34;前言&#34;&gt;前言&lt;/h3&gt;&#xA;&lt;p&gt;本系列将对夜莺平台各个模块的主要逻辑代码进行介绍，方便大家进行二次开发，本篇是系列的第三篇， index 和 tsdb 模块。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>夜莺二次开发指南-监控系统（2）</title>
+      <link>http://www.qinyening.com/post/2020-12-24-n9e-dev2/</link>
+      <pubDate>Wed, 30 Dec 2020 19:02:56 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2020-12-24-n9e-dev2/</guid>
+      <description>&lt;h3 id=&#34;前言&#34;&gt;前言&lt;/h3&gt;&#xA;&lt;p&gt;本系列将对夜莺平台各个模块的主要逻辑代码进行介绍，方便大家进行二次开发，本篇是系列的第二篇，judge模块的解读。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>夜莺二次开发指南-监控系统（1）</title>
+      <link>http://www.qinyening.com/post/2020-12-24-n9e-dev1/</link>
+      <pubDate>Thu, 24 Dec 2020 19:02:56 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2020-12-24-n9e-dev1/</guid>
+      <description>&lt;h2 id=&#34;前言&#34;&gt;前言&lt;/h2&gt;&#xA;&lt;p&gt;本系列将对夜莺平台各个模块的主要逻辑代码进行介绍，方便大家进行二次开发，本篇是系列的第一篇，agent 和 transfer 模块代码解读。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>企业监控平台建设-需求分析篇</title>
+      <link>http://www.qinyening.com/post/2019-06-29-monitor01/</link>
+      <pubDate>Sat, 29 Jun 2019 19:02:56 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2019-06-29-monitor01/</guid>
+      <description>&lt;h2 id=&#34;前言&#34;&gt;前言&lt;/h2&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;工作以来一直在做监控平台相关的工作，最近计划写一系列文章总结下对企业监控平台建设的思考，本文是第一篇&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>职业思考：深度工作</title>
+      <link>http://www.qinyening.com/post/2017-08-27-deep-work/</link>
+      <pubDate>Sun, 27 Aug 2017 14:52:21 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2017-08-27-deep-work/</guid>
+      <description>&lt;h3 id=&#34;什么是深度工作&#34;&gt;什么是深度工作&lt;/h3&gt;&#xA;&lt;p&gt;首先说说一下什么是深度工作，《深度工作》一书的作者给出了如下定义：&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Urlooker：Web 可用性监控系统</title>
+      <link>http://www.qinyening.com/post/2016-08-07-urlooker/</link>
+      <pubDate>Sun, 07 Aug 2016 15:44:19 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-08-07-urlooker/</guid>
+      <description>&lt;p&gt;分享下最近写的 url 监控 项目 &lt;a href=&#34;https://github.com/710leo/urlooker&#34;&gt;urlooker&lt;/a&gt;，监控web服务可用性及访问质量，采用go语言编写，易于安装和二次开发&lt;/p&gt;&#xA;&lt;h2 id=&#34;feature&#34;&gt;Feature&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;返回状态码检测&lt;/li&gt;&#xA;&lt;li&gt;页面响应时间检测&lt;/li&gt;&#xA;&lt;li&gt;页面关键词匹配检测&lt;/li&gt;&#xA;&lt;li&gt;自定义Header&lt;/li&gt;&#xA;&lt;li&gt;GET、POST、PUT访问&lt;/li&gt;&#xA;&lt;li&gt;自定义POST BODY&lt;/li&gt;&#xA;&lt;li&gt;检测结果支持向open-falcon推送&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+    </item>
+    <item>
+      <title>Go Web开发脚手架 Toruk</title>
+      <link>http://www.qinyening.com/post/2016-07-11-go-web-toruk/</link>
+      <pubDate>Mon, 11 Jul 2016 16:21:22 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-07-11-go-web-toruk/</guid>
+      <description>&lt;p&gt;使用golang开发项目也有一年时间了，也开发了一些web的项目，把项目中一些第三方库抽离出来，整理了一个go web开发脚手架，Toruk主要包括一下几个部分:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;路由：github.com/gorilla/mux&lt;/li&gt;&#xA;&lt;li&gt;渲染模板：github.com/unrolled/render&lt;/li&gt;&#xA;&lt;li&gt;Cookie封装：github.com/gorilla/securecookie&lt;/li&gt;&#xA;&lt;li&gt;中间件：github.com/codegangsta/negroni&lt;/li&gt;&#xA;&lt;li&gt;上下文传输：github.com/gorilla/context&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+    </item>
+    <item>
+      <title>企业级监控系统设计实践（三）数据转发</title>
+      <link>http://www.qinyening.com/post/2016-07-07-monitor-system3/</link>
+      <pubDate>Thu, 07 Jul 2016 23:58:56 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-07-07-monitor-system3/</guid>
+      <description>&lt;h2 id=&#34;插件&#34;&gt;插件&lt;/h2&gt;&#xA;&lt;p&gt;上节讲了关于机器指标的采集，本节讲一下业务数据的采集，业务数据其实我们做的主要就是制定规范，告诉用户按照什么样的数据格式上报数据&lt;/p&gt;&#xA;&lt;p&gt;根据经验，数据格式主要需要下面几个指标&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;metric 告诉监控系统数据项是什么&lt;/li&gt;&#xA;&lt;li&gt;value 指标的数值&lt;/li&gt;&#xA;&lt;li&gt;endpoint 上报数据的来源&lt;/li&gt;&#xA;&lt;li&gt;tag 形式为a=b，通过tag可以匹配一批数据&lt;/li&gt;&#xA;&lt;li&gt;timestamp 上报时间&lt;/li&gt;&#xA;&lt;li&gt;step 上报间隔&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+    </item>
+    <item>
+      <title>企业级监控系统设计实践（二）数据采集</title>
+      <link>http://www.qinyening.com/post/2016-07-03-monitor-system2/</link>
+      <pubDate>Sun, 03 Jul 2016 23:54:43 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-07-03-monitor-system2/</guid>
+      <description>&lt;h2 id=&#34;数据采集&#34;&gt;数据采集&lt;/h2&gt;&#xA;&lt;p&gt;收到数据采集，那我们主要需要哪些数据呢？&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;机器的状态，cpu，内存&lt;/li&gt;&#xA;&lt;li&gt;业务自己产生的数据，如qps等&lt;/li&gt;&#xA;&lt;li&gt;mysql，redis等开源软件自身的状态数据&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;上面的数据大致可以分为两类：&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;机器指标&lt;/li&gt;&#xA;&lt;li&gt;业务数据&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;采集方式也有两种：push和pull&#xA;当agent数量非常庞大时，如果采用pull的方式，server端需要保持大量的链接，非常消耗性能，所以我们采用agent push数据的方式&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>企业级监控系统设计实践（一）</title>
+      <link>http://www.qinyening.com/post/2016-06-28-monitor-system/</link>
+      <pubDate>Tue, 28 Jun 2016 16:20:36 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-06-28-monitor-system/</guid>
+      <description>&lt;h2 id=&#34;背景&#34;&gt;背景&lt;/h2&gt;&#xA;&lt;p&gt;从公司产品上线的那一天就开始需要运维，而监控则是运维中重要的一环，那我们想一下，为什么要监控呢，因为要保证线上服务出问题之后或者即将出问题时能立刻感知，此外有些数据我们想知道它的发展趋势。这其实已经道出了监控的最小功能点：&#xA;&lt;strong&gt;收集信息，进行处理，发出提醒，数据展示&lt;/strong&gt;&lt;/p&gt;&#xA;&lt;h3 id=&#34;阶段一&#34;&gt;阶段一：&lt;/h3&gt;&#xA;&lt;p&gt;机器数量：n &amp;lt; 5&#xA;假如公司的只有一款产品部署在一台机器，那我们只要写一个监控脚本，收集机器的信息和业务指标，再加一些判断，就完事了&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>小米监控系统falcon优点和缺点</title>
+      <link>http://www.qinyening.com/post/2016-06-25-open-falcon/</link>
+      <pubDate>Sat, 25 Jun 2016 21:40:23 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-06-25-open-falcon/</guid>
+      <description>&lt;p&gt;参与开发和维护小米的falcon系统也有挺长时间了，总结一下falcon的一些优点和缺点。如果对falcon不了解，建议先对下这篇文章《&lt;a href=&#34;http://book.open-falcon.org/zh/intro/index.html&#34;&gt;open-falcon介绍&lt;/a&gt;》&lt;/p&gt;&#xA;&lt;p&gt;先说下具备的优势：&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;灵活的数据采集，支持自定义数据上报&lt;/li&gt;&#xA;&lt;li&gt;支持策略模板、模板继承和覆盖&lt;/li&gt;&#xA;&lt;li&gt;高效的告警判别，支持告警暂停、维护周期设置&lt;/li&gt;&#xA;&lt;li&gt;组件支持水平拓展&lt;/li&gt;&#xA;&lt;li&gt;大部分用golang编写，部署相对简单&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+    </item>
+    <item>
+      <title>哈里·谢顿的一生</title>
+      <link>http://www.qinyening.com/post/2016-04-25-hari-seldon/</link>
+      <pubDate>Mon, 25 Apr 2016 00:20:00 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-04-25-hari-seldon/</guid>
+      <description>&lt;p&gt;第一次出场时32岁,书中这样描述他&lt;/p&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;这个时期的&lt;em&gt;哈里・谢顿&lt;/em&gt;貌不惊人。他与克里昂大帝一世一样，当年三十二岁，不过他的身高只有一 米七三。 他的脸庞光润，显得喜气洋洋，头发是接近黑色的深褐色，而他的衣着则带着一种一眼就看得出的土气&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>生活小窍门-善用清单</title>
+      <link>http://www.qinyening.com/post/2016-01-16-list/</link>
+      <pubDate>Sat, 16 Jan 2016 17:27:31 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-01-16-list/</guid>
+      <description>&lt;p&gt;有时候在做一件事情之前列一个清单，事情做起来会很节省时间，比如去超市之前，想好想买什么，然后列一个清单，这样会避免两个问题&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>推荐一些实用的app-2016版</title>
+      <link>http://www.qinyening.com/post/2016-01-06-apps/</link>
+      <pubDate>Wed, 06 Jan 2016 00:39:58 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-01-06-apps/</guid>
+      <description>&lt;p&gt;智能手机已经改变了我们的生活，记录一下常用的比较好用的app。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>有效沟通</title>
+      <link>http://www.qinyening.com/post/2016-01-03-comunication/</link>
+      <pubDate>Sun, 03 Jan 2016 00:40:30 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2016-01-03-comunication/</guid>
+      <description>&lt;p&gt;最近遇到的人和事，让我认识到了一个词的重要性，沟通，人和人之间要合作，就得沟通，还要是有效地沟通，那怎样有效的沟通呢？笔者最近就在思考这个问题，首先想到的是，在沟通时，要一个中心点，我们沟通是为了什么，然后一定要先理解对方要表达的意思，不要急于表达自己的意思，等明白对方的意思后，还要确保对方也明白了自己的意思，这样才能有效的沟通下去。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>利用 IFTTT &#43; RSS &#43; Evernote 打造优质资料库</title>
+      <link>http://www.qinyening.com/post/2015-09-21-ifttt-rss-evernote/</link>
+      <pubDate>Mon, 21 Sep 2015 22:07:22 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/2015-09-21-ifttt-rss-evernote/</guid>
+      <description>&lt;p&gt;如今信息浩瀚如海，怎样从中筛选优质信息并化为自己的呢，下面介绍三个利器，通过他们打造自己的优质资料库&lt;/p&gt;&#xA;&lt;p&gt;我们每天主要的信息来源有下面几大类                     &lt;br&gt;&#xA;1.博客  &lt;br&gt;&#xA;2.微信公众账号&lt;br&gt;&#xA;3.微博&lt;br&gt;&#xA;4.twitter&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>程序员的思维修炼 读书笔记</title>
+      <link>http://www.qinyening.com/post/pragmatic-thinking-and-learning/</link>
+      <pubDate>Mon, 17 Aug 2015 21:37:47 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/pragmatic-thinking-and-learning/</guid>
+      <description>&lt;p&gt;虽然这本书是名字叫“程序员的思维修炼”，但普通人也值得一看，书中对大脑的机制和认知偏见做了很好的讲解，这里简单记录下，主要是第三章到第五章的内容&lt;/p&gt;&#xA;&lt;h3 id=&#34;关于大脑的机制&#34;&gt;关于大脑的机制&lt;/h3&gt;&#xA;&lt;p&gt;我们两个半脑工作机制有很大不同，这个我们是知道的，但书中关于总线的隐喻比较新颖，大脑由两个cpu，一个总线，一个内存构成&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Web漏洞演练平台 – ZVulDrill</title>
+      <link>http://www.qinyening.com/post/zvuldrill/</link>
+      <pubDate>Thu, 27 Feb 2014 09:19:19 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/zvuldrill/</guid>
+      <description>&lt;p&gt;在学习和研究web漏洞的过程中对每一种漏洞都进行了测试，将其整理到了一块儿，于是有了一个简单的Web漏洞演练平台–ZVulDrill，通过演练平台大家可以亲身实践如何利用这个漏洞，同时也可以学习到漏洞的相关知识。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>任意文件遍历漏洞介绍</title>
+      <link>http://www.qinyening.com/post/wen-jian-bian-li/</link>
+      <pubDate>Mon, 09 Dec 2013 09:46:45 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/wen-jian-bian-li/</guid>
+      <description>&lt;h4 id=&#34;1-简介&#34;&gt;1 简介&lt;/h4&gt;&#xA;&lt;p&gt;文件遍历漏洞利用方法乍一看和文件包含差不多，其实有本质的差别，文件遍历的利用方法是通过路径直接访问资源， 当网站应用通过连接请求资源时，会根据实际完整路径查找资源，因此通过利用../等可以跨目录访问其他资源， 实例：&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>文件包含漏洞介绍</title>
+      <link>http://www.qinyening.com/post/wen-jian-bao-han/</link>
+      <pubDate>Fri, 08 Nov 2013 22:59:35 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/wen-jian-bao-han/</guid>
+      <description>&lt;h4 id=&#34;1形成原因&#34;&gt;1.形成原因&lt;/h4&gt;&#xA;&lt;p&gt;使用动态文件包含且变量没有过滤&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>开发资讯发布系统有感</title>
+      <link>http://www.qinyening.com/post/kai-fa-zi-xun-fa-bu-xi-tong-you-gan/</link>
+      <pubDate>Sun, 13 Oct 2013 11:54:15 +0800</pubDate>
+      <guid>http://www.qinyening.com/post/kai-fa-zi-xun-fa-bu-xi-tong-you-gan/</guid>
+      <description>&lt;p&gt;断断续续的终于把资讯发布系统完成了，当开发一个很大的应用时，先把其分成几个小的模块，然后在单独对其进行开发，这样会方便很多，就像刚开始开发这个发布系统的时候，几个模块差别挺大的，&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

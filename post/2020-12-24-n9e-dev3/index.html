@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <title>夜莺二次开发指南-监控系统（3） | 秦叶宁的网志</title>
+    <meta property="og:title" content="夜莺二次开发指南-监控系统（3） - 秦叶宁的网志">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2021-01-12T19:00:56&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2021-01-12T19:00:56&#43;08:00'>
+        
+    <meta name="Keywords" content="golang monitor aiops">
+    <meta name="description" content="夜莺二次开发指南-监控系统（3）">
+        
+    <meta name="author" content="秦叶宁">
+    <meta property="og:url" content="http://www.qinyening.com/post/2020-12-24-n9e-dev3/">
+    <link rel="shortcut icon" href='http://blog-1255977231.cos.ap-beijing.myqcloud.com/151300.jpg'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <script type="text/javascript" src="//cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    
+    
+    
+    <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?62edf66253cb0df3cc6c28c802e8bf1f";
+      var s = document.getElementsByTagName("script")[0]; 
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+    
+    
+    
+    
+    
+    
+        <link rel="stylesheet" href='/css/douban.css'>
+    
+        <link rel="stylesheet" href='/css/other.css'>
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="http://www.qinyening.com/">
+                        秦叶宁的网志
+                    </a>
+                
+                <p class="description">专注于可观测性、AIOps</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="http://www.qinyening.com/">首页</a>
+                    
+                    <a  href="http://www.qinyening.com/archives/" title="归档">归档</a>
+                    
+                    <a  href="http://www.qinyening.com/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">夜莺二次开发指南-监控系统（3）</h1>
+        </header>
+        
+        <date class="post-meta meta-date">
+            2021年1月12日
+        </date>
+        
+        
+        
+        
+        <div class="post-content">
+            <h3 id="前言">前言</h3>
+<p>本系列将对夜莺平台各个模块的主要逻辑代码进行介绍，方便大家进行二次开发，本篇是系列的第三篇， index 和 tsdb 模块。</p>
+<p>首先贴下夜莺的项目地址和架构图，正在使用夜莺的读者欢迎给夜莺加一个star</p>
+<ul>
+<li>github地址 <a href="https://github.com/didi/nightingale">https://github.com/didi/nightingale</a></li>
+<li>v3.0架构图</li>
+</ul>
+<p>
+        <img class="mx-auto" alt="img" src="https://static001.geekbang.org/infoq/66/66755aa167d4046396b0b08847918b3f.png" />   
+    </p>
+<p>本篇主要讲解数据存储模块 index 和 tsdb 模块，首先说明一下 transfer 到 tsdb 的数据流转</p>
+<h3 id="transfer-到-tsdb-数据流转">transfer 到 tsdb 数据流转</h3>
+<p>夜莺的默认存储后端是 tsdb 模块，为了可以支持海量的监控数据，tsdb 必须是可以横向水平扩展的，也就是 tsdb 可以部署多个实例，有了多个实例之后，会引入一个新问题，当监控数据来到服务端之后，应该发给哪个实例呢，这个工作交给 transfer 来负责决定，transfer 在将监控数据分发给tsdb的时候，使用了 <a href="https://github.com/didi/nightingale/blob/68bccb4d3fc33cd1a24f17930413fae8bc89aca3/src/modules/transfer/backend/tsdb/tsdb.go#L103">一致性hash </a>算法，保证了同一条曲线的监控数据，每次都可以转发到相同的后端。transfer 同时也负责了监控数据查询的工作，因为知道数据发给谁，所以也知道去哪里获取数据。之所以使用 一致性hash 还有一个原因是，在 tsdb 实例数据发生变更之后，可以保证发生迁移的监控数据尽可能的少。</p>
+<p>下面讲解下 tsdb 模块代码的主要逻辑</p>
+<h3 id="tsdb-模块">tsdb 模块</h3>
+<p>首先看下 tsdb 模块的 main 函数，主要负责下面几个工作</p>
+<ul>
+<li>接收监控数据写入内存</li>
+<li>将内存中的数据定期落盘</li>
+<li>将监控数据的索引推送到 index 模块</li>
+<li>提供数据查询的能力</li>
+</ul>
+<pre tabindex="0"><code>func main() {
+    aconf()
+    pconf()
+    start()
+
+    cfg := config.Config
+
+    loggeri.Init(cfg.Logger)
+    go stats.Init(&#34;n9e.tsdb&#34;)
+
+    cache.Init(cfg.Cache) //初始化用户存活监控数据的内存时序库
+    index.Init(cfg.Index) //初始化存放索引的功能
+    brpc.Init(cfg.RpcClient, index.IndexList.Get()) //连接index模块的client
+
+    cache.InitChunkSlot() //初始化用来落盘的槽位
+    rrdtool.Init(cfg.RRD) //启动落盘任务
+
+    migrate.Init(cfg.Migrate) //启动扩容功能
+
+    go http.Start()
+    go rpc.Start()
+
+    startSignal(os.Getpid())
+}
+</code></pre><h4 id="tsdb-架构">tsdb 架构</h4>
+<p>下面是 tsdb 模块的架构设计图</p>
+<p>
+        <img class="mx-auto" alt="img" src="https://static001.geekbang.org/infoq/fd/fd5c7fb3c2272c29d6b640393414151d.png" />   
+    </p>
+<p>tsdb 模块接收到数据之后，会先将数据存放到内存当中，在将数据写入内存的时候，因为 tsdb 引入了 facebook 开源的 Gorilla 压缩算法，所以会对监控数据进行一次压缩，每条曲线有一个 chunks，每个 chunks 有多个 chunk 组成，每个chunk 都储存了一段时间的监控数据。chunk 写满之后，会放到左边的 slot 中，然后按顺序落盘到 rrd 文件中，当查询请求过来之后，tsdb 会先从内存中拿数据，当拿到的数据不满足时间范围时，则会继续从 rrd 中读取数据，之后再将查到的数据进行合并，一并返回去。</p>
+<h4 id="数据写入">数据写入</h4>
+<p>数据写入内存的过程主要由以下代码实现，监控数据上来之后，首先会检测对应的 chunk 是否存在，如果不存在则新建一个 chunk，如果存在，则写入到对应的chunk中，如果等待写入的 chunk 满了，则将 chunk push 到 ChunksSlots 中，再新建一个chunk</p>
+<pre tabindex="0"><code>func (cs *CS) Push(seriesID string, ts int64, value float64) error {
+    //找到当前chunk的起始时间
+    t0 := uint32(ts - (ts % int64(Config.SpanInSeconds)))
+
+    // 尚无chunk
+    if len(cs.Chunks) == 0 {
+        c := NewChunk(uint32(t0))
+        c.FirstTs = uint32(ts)
+        cs.Chunks = append(cs.Chunks, c)
+
+        return cs.Chunks[0].Push(uint32(ts), value)
+    }
+
+    // push到当前chunk
+    currentChunk := cs.GetChunk(cs.CurrentChunkPos)
+    if t0 == currentChunk.T0 {
+        if currentChunk.Closed {
+            return fmt.Errorf(&#34;push to closed chunk&#34;)
+        }
+
+        return currentChunk.Push(uint32(ts), value)
+    }
+
+    if t0 &lt; currentChunk.T0 {
+        return fmt.Errorf(&#34;data @%v, timestamp old than previous chunk. currentchunk t0: %v\n&#34;, t0, currentChunk.T0)
+    }
+
+    // 需要新建chunk
+    // 先finish掉现有chunk
+    if !currentChunk.Closed {
+        currentChunk.FinishSync()
+        ChunksSlots.Push(seriesID, currentChunk)
+    }
+
+    // 超过chunks限制, pos回绕到0
+    cs.CurrentChunkPos++
+    if cs.CurrentChunkPos &gt;= int(Config.NumOfChunks) {
+        cs.CurrentChunkPos = 0
+    }
+
+    // chunks未满, 直接append即可
+    if len(cs.Chunks) &lt; int(Config.NumOfChunks) {
+        c := NewChunk(uint32(t0))
+        c.FirstTs = uint32(ts)
+        cs.Chunks = append(cs.Chunks, c)
+
+        return cs.Chunks[cs.CurrentChunkPos].Push(uint32(ts), value)
+    } else {
+        c := NewChunk(uint32(t0))
+        c.FirstTs = uint32(ts)
+        cs.Chunks[cs.CurrentChunkPos] = c
+
+        return cs.Chunks[cs.CurrentChunkPos].Push(uint32(ts), value)
+    }
+
+    return nil
+}
+</code></pre><h4 id="落盘机制">落盘机制</h4>
+<p>tsdb 另一个任务是定期将监控数据进行落盘，主要有 <a href="https://github.com/didi/nightingale/blob/master/src/modules/tsdb/rrdtool/sync_disk.go#L156">FlushFinishd2Disk() </a>来完成，槽位的个数由 FlushDiskStepMs 和 SpanInSeconds 来决定，每个刷新周期会将一个槽位的数据落盘的 rrd 文件中，具体 FlushDiskStepMs 的设置由磁盘 io 的能力决定。</p>
+<pre tabindex="0"><code>func FlushFinishd2Disk() {
+    var idx int = 0
+    //time.Sleep(time.Second * time.Duration(cache.Config.SpanInSeconds))
+    ticker := time.NewTicker(time.Millisecond * time.Duration(cache.Config.FlushDiskStepMs)).C
+    slotNum := cache.Config.SpanInSeconds * 1000 / cache.Config.FlushDiskStepMs
+    for {
+        select {
+        case &lt;-ticker:
+            idx = idx % slotNum
+            chunks := cache.ChunksSlots.Get(idx)
+            flushChunks := make(map[string][]*cache.Chunk, 0)
+            for key, cs := range chunks {
+                flushChunks[key] = cs
+            }
+            FlushRRD(flushChunks)
+            idx += 1
+        case &lt;-cache.FlushDoneChan:
+            logger.Info(&#34;FlushFinishd2Disk recv sigout and exit...&#34;)
+            return
+        }
+    }
+}
+</code></pre><h4 id="数据查询">数据查询</h4>
+<pre tabindex="0"><code>// 先从内从查询数据
+iters, err := cache.Caches.Get(seriesID, startTs, endTs)
+//查询起始时间在cache范围内，直接返回结果
+if cachePointsSize &gt; 0 &amp;&amp; param.Start &gt;= cachePoints[0].Timestamp {
+    resp.Values = cachePoints
+    stats.Counter.Set(&#34;query.hit.cache&#34;, 1)
+    goto _RETURN_OK
+}
+//从rrd文件查询数据
+rrdFile = utils.RrdFileName(rrdtool.Config.Storage, seriesID, dsType, step)
+rrdDatas, err = rrdtool.Fetch(rrdFile, seriesID, param.ConsolFunc, startTs-int64(step), endTs, step)
+
+//合并之后，如果数据点太多，对数据进行降采样
+if rsize &gt; MaxRRAPointCnt {
+            sampleRate = int(rsize/MaxRRAPointCnt) + 1
+            sampleSize = int(rsize / sampleRate)
+            sampleStep = sampleRate * realStep
+}
+</code></pre><h4 id="索引更新">索引更新</h4>
+<p>tsdb 会定期地新增索引和全量索引同步给 index 模块，为了保证 index 模块的高可用，index 会部署多个实例，那 tsdb 如何感知到有哪些 index 实例呢，index 会定期上报自己的心跳，tsdb 在上报索引的时候，会查询存活的 index 实例列表，然后将索引上报给所有存活的 index 实例。</p>
+<h3 id="index模块">index模块</h3>
+<p>在从 transfer 查询监控数据的时候，需要提供完整的索引信息，这样transfer才可以知道从哪个tsdb后端数据，而索引信息的查询能力则由 index 模块来提供。下面是 index 模块的内存模型，非常简单，就是一个多级的map结构，所有的索引数据都存在 index 的内存中，为了防止 index 重启之后，缺失索引数据，index 会定期将索引数据进行落盘，不过 index 重启之后，不会直接使用落盘的数据，会先从其他 index 模块查询数据构建索引，这个才可以保证索引数据是最新的。只有在从其他 index 查不到数据的情况下，才会使用落盘数据重建索引。</p>
+<p>index 其实就是一个多级的map，下面是 index 的数据模型和代码中对于的数据结构</p>
+<p><strong>数据模型</strong></p>
+<p>
+        <img class="mx-auto" alt="img" src="https://static001.geekbang.org/infoq/ee/ee708e749db5ca320fa3cd2770bdfeae.png" />   
+    </p>
+<p><strong>数据结构</strong></p>
+<pre tabindex="0"><code>type EndpointIndexMap struct {
+    sync.RWMutex
+    M map[string]*MetricIndexMap `json:&#34;endpoint_index&#34;` 
+}
+
+type MetricIndexMap struct {
+    sync.RWMutex
+    Reported bool 
+    Data     map[string]*MetricIndex
+}
+
+type MetricIndex struct {
+    sync.RWMutex
+    Metric     string        `json:&#34;metric&#34;`
+    Step       int           `json:&#34;step&#34;`
+    DsType     string        `json:&#34;dstype&#34;`
+    TagkvMap   *TagkvIndex   `json:&#34;tags&#34;`
+    CounterMap *CounterTsMap `json:&#34;counters&#34;`
+    Ts         int64         `json:&#34;ts&#34;`
+}
+
+type TagkvIndex struct {
+    sync.RWMutex
+    Tagkv map[string]map[string]int64 `json:&#34;tagkv&#34;` // map[tagk]map[tagv]ts
+}
+</code></pre><p>到此监控系统的介绍就结束了，下篇将为大家带来用户资源中心（RDB）模块的解读</p>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="http://www.qinyening.com/">秦叶宁</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="http://www.qinyening.com/post/2020-12-24-n9e-dev3/">http://www.qinyening.com/post/2020-12-24-n9e-dev3/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    
+</div>
+
+
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/%E7%9B%91%E6%8E%A7'>监控</a></li>
+                
+            </ul>
+            
+        </div>
+    </article>
+    
+    
+
+    
+    
+</div>
+
+                    <footer id="footer">
+    <div class="container">
+      &copy; 2025 <a rel="nofollow" href="http://www.qinyening.com/">秦叶宁的网志</a>.
+        Powered by <a rel="nofollow noreferer noopener" href="https://gohugo.io">Hugo</a> &amp; <a rel="nofollow noreferer noopener" href="https://github.com/flysnow-org/maupassant-hugo">maupassant theme</a>.
+    </div>
+</footer>
+
+<script type="text/javascript" src="/js/app.js" defer></script>
+
+
+<script type="text/javascript" src="/js/douban.js" defer></script>
+<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' defer></script>
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='http://www.qinyening.com/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="http://www.qinyening.com/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2021-11-17-stability/" title="运维体系建设思考-稳定性篇">运维体系建设思考-稳定性篇</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev6/" title="夜莺二次开发指南-任务执行中心">夜莺二次开发指南-任务执行中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev4/" title="夜莺二次开发指南-用户资源中心">夜莺二次开发指南-用户资源中心</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev5/" title="夜莺二次开发指南-资产设备管理">夜莺二次开发指南-资产设备管理</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev3/" title="夜莺二次开发指南-监控系统（3）">夜莺二次开发指南-监控系统（3）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev2/" title="夜莺二次开发指南-监控系统（2）">夜莺二次开发指南-监控系统（2）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2020-12-24-n9e-dev1/" title="夜莺二次开发指南-监控系统（1）">夜莺二次开发指南-监控系统（1）</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2019-06-29-monitor01/" title="企业监控平台建设-需求分析篇">企业监控平台建设-需求分析篇</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2017-08-27-deep-work/" title="职业思考：深度工作">职业思考：深度工作</a>
+    </li>
+    
+    <li>
+        <a href="http://www.qinyening.com/post/2016-08-07-urlooker/" title="Urlooker：Web 可用性监控系统">Urlooker：Web 可用性监控系统</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/categories/'>分类</a></h3>
+<ul class="widget-list">
+    
+    <li><a href="http://www.qinyening.com/categories/IT%E6%8A%80%E6%9C%AF/">IT技术 (3)</a></li>
+    
+    <li><a href="http://www.qinyening.com/categories/%E8%AE%A4%E7%9F%A5%E7%A7%91%E5%AD%A6/">认知科学 (1)</a></li>
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="http://www.qinyening.com/tags/%E5%AE%89%E5%85%A8/">安全</a>
+    
+    <a href="http://www.qinyening.com/tags/%E7%9B%91%E6%8E%A7/">监控</a>
+    
+    <a href="http://www.qinyening.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/">读书笔记</a>
+    
+    <a href="http://www.qinyening.com/tags/%E9%9A%8F%E6%83%B3/">随想</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.x2know.org" title="秦叶宁的网志">秦叶宁的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.yangzhiping.com/" title="阳志平的网志">阳志平的网志</a>
+        </li>
+        
+        <li>
+            <a target="_blank" href="https://www.v2ex.com/go/create" title="V2EX">V2EX</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="http://www.qinyening.com/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
